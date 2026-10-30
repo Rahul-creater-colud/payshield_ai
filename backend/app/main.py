@@ -65,6 +65,17 @@ def create_app() -> FastAPI:
     _app.include_router(admin.router)
     _app.include_router(frontend_api.router)
 
+    @_app.get("/")
+    def root():
+        return {
+            "service": "PayShield AI - UPI Fraud Prevention API",
+            "version": settings.MODEL_VERSION,
+            "status": "running",
+            "documentation": "/docs",
+            "frontend_ui": "http://localhost:5173",
+            "health": "/health",
+        }
+
     return _app
 
 

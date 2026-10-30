@@ -1,0 +1,242 @@
+{
+  "demo_users": [
+    {
+      "user_id": "U001",
+      "display_name": "Aarav Sharma",
+      "baseline_profile": {
+        "avg_amount": 1200.0,
+        "max_amount": 5000.0,
+        "txn_per_week": 8,
+        "usual_hours": [8, 22],
+        "known_recipients": ["ACC_101", "ACC_102", "ACC_103"]
+      }
+    },
+    {
+      "user_id": "U002",
+      "display_name": "Priya Patel",
+      "baseline_profile": {
+        "avg_amount": 800.0,
+        "max_amount": 3000.0,
+        "txn_per_week": 5,
+        "usual_hours": [9, 21],
+        "known_recipients": ["ACC_101", "ACC_104"]
+      }
+    },
+    {
+      "user_id": "U003",
+      "display_name": "Rahul Verma",
+      "baseline_profile": {
+        "avg_amount": 2500.0,
+        "max_amount": 15000.0,
+        "txn_per_week": 12,
+        "usual_hours": [7, 23],
+        "known_recipients": ["ACC_105", "ACC_106", "ACC_107"]
+      }
+    },
+    {
+      "user_id": "U004",
+      "display_name": "Sneha Iyer",
+      "baseline_profile": {
+        "avg_amount": 500.0,
+        "max_amount": 2000.0,
+        "txn_per_week": 3,
+        "usual_hours": [10, 20],
+        "known_recipients": ["ACC_108"]
+      }
+    },
+    {
+      "user_id": "U005",
+      "display_name": "Vikram Singh",
+      "baseline_profile": {
+        "avg_amount": 3000.0,
+        "max_amount": 20000.0,
+        "txn_per_week": 15,
+        "usual_hours": [6, 22],
+        "known_recipients": ["ACC_109", "ACC_110"]
+      }
+    },
+    {
+      "user_id": "U006",
+      "display_name": "Demo Merchant",
+      "baseline_profile": {
+        "avg_amount": 1500.0,
+        "max_amount": 10000.0,
+        "txn_per_week": 50,
+        "usual_hours": [0, 23],
+        "known_recipients": ["ACC_201"]
+      }
+    }
+  ],
+  "accounts_or_vpas": [
+    {"account_id": "ACC_101", "vpa": "aarav@upi", "mobile": "9000000001", "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_102", "vpa": "grocery-store@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_103", "vpa": "electric-bill@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_104", "vpa": "priya-friend@upi", "mobile": "9000000004", "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_105", "vpa": "rahul-vendor@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_106", "vpa": "office-canteen@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_107", "vpa": "rahul-landlord@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_108", "vpa": "sneha-shop@upi", "mobile": "9000000008", "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_109", "vpa": "vikram-supplier@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_110", "vpa": "vikram-partner@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_111", "vpa": "new-clean-shop@upi", "mobile": "9000000011", "report_status": "NONE", "risk_context": {"description": "Scenario D – new but clean recipient"}},
+
+    {"account_id": "ACC_150", "vpa": "fake-refund-support@upi", "mobile": "9000000099", "report_status": "REPORTED", "risk_context": {"notes": "Scenario A – fake collect request sender"}},
+
+    {"account_id": "ACC_201", "vpa": "mule-sender1@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_202", "vpa": "mule-sender2@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_203", "vpa": "mule-sender3@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_204", "vpa": "mule-sender4@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_205", "vpa": "mule-sender5@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_300", "vpa": "central-mule@upi", "mobile": "9000000300", "report_status": "REPORTED", "risk_context": {"notes": "Scenario B – mule hub"}},
+    {"account_id": "ACC_401", "vpa": "cash-out-1@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_402", "vpa": "cash-out-2@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_403", "vpa": "cash-out-3@upi", "mobile": null, "report_status": "NONE", "risk_context": {}},
+
+    {"account_id": "ACC_500", "vpa": "merchant-legit@upi", "mobile": "9000000500", "report_status": "NONE", "risk_context": {}},
+    {"account_id": "ACC_501", "vpa": "merchant-fake@upi", "mobile": "9000000501", "report_status": "REPORTED", "risk_context": {}},
+
+    {"account_id": "ACC_600", "vpa": "lottery-scam@upi", "mobile": "9000000600", "report_status": "REPORTED", "risk_context": {}},
+    {"account_id": "ACC_601", "vpa": "kyc-scam@upi", "mobile": "9000000601", "report_status": "REPORTED", "risk_context": {}}
+  ],
+  "transactions": [
+    {"transaction_id": "TXN_000001", "sender_id": "U001", "receiver_id": "ACC_101", "amount": 500.0, "timestamp": "2026-10-29T10:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000002", "sender_id": "U001", "receiver_id": "ACC_102", "amount": 350.0, "timestamp": "2026-10-29T10:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000003", "sender_id": "U001", "receiver_id": "ACC_103", "amount": 1200.0, "timestamp": "2026-10-29T11:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000004", "sender_id": "U002", "receiver_id": "ACC_101", "amount": 800.0, "timestamp": "2026-10-29T09:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000005", "sender_id": "U002", "receiver_id": "ACC_104", "amount": 200.0, "timestamp": "2026-10-29T14:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000006", "sender_id": "U003", "receiver_id": "ACC_105", "amount": 2500.0, "timestamp": "2026-10-29T08:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000007", "sender_id": "U003", "receiver_id": "ACC_106", "amount": 150.0, "timestamp": "2026-10-29T12:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000008", "sender_id": "U003", "receiver_id": "ACC_107", "amount": 10000.0, "timestamp": "2026-10-28T09:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000009", "sender_id": "U004", "receiver_id": "ACC_108", "amount": 450.0, "timestamp": "2026-10-29T15:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000010", "sender_id": "U005", "receiver_id": "ACC_109", "amount": 3000.0, "timestamp": "2026-10-29T07:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000011", "sender_id": "U005", "receiver_id": "ACC_110", "amount": 5000.0, "timestamp": "2026-10-29T16:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+
+    {"transaction_id": "TXN_000012", "sender_id": "U001", "receiver_id": "ACC_101", "amount": 1000.0, "timestamp": "2026-10-28T10:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000013", "sender_id": "U001", "receiver_id": "ACC_102", "amount": 700.0, "timestamp": "2026-10-28T11:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000014", "sender_id": "U001", "receiver_id": "ACC_103", "amount": 1500.0, "timestamp": "2026-10-27T10:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000015", "sender_id": "U002", "receiver_id": "ACC_101", "amount": 600.0, "timestamp": "2026-10-28T09:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000016", "sender_id": "U002", "receiver_id": "ACC_104", "amount": 300.0, "timestamp": "2026-10-27T14:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000017", "sender_id": "U003", "receiver_id": "ACC_106", "amount": 200.0, "timestamp": "2026-10-28T12:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000018", "sender_id": "U004", "receiver_id": "ACC_108", "amount": 500.0, "timestamp": "2026-10-28T15:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000019", "sender_id": "U005", "receiver_id": "ACC_109", "amount": 2000.0, "timestamp": "2026-10-28T07:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000020", "sender_id": "U005", "receiver_id": "ACC_110", "amount": 4500.0, "timestamp": "2026-10-28T16:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000021", "sender_id": "U001", "receiver_id": "ACC_102", "amount": 900.0, "timestamp": "2026-10-27T09:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000022", "sender_id": "U003", "receiver_id": "ACC_105", "amount": 3500.0, "timestamp": "2026-10-27T08:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000023", "sender_id": "U003", "receiver_id": "ACC_107", "amount": 12000.0, "timestamp": "2026-10-26T09:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000024", "sender_id": "U004", "receiver_id": "ACC_108", "amount": 350.0, "timestamp": "2026-10-27T16:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000025", "sender_id": "U001", "receiver_id": "ACC_101", "amount": 250.0, "timestamp": "2026-10-26T10:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000026", "sender_id": "U001", "receiver_id": "ACC_103", "amount": 2200.0, "timestamp": "2026-10-26T11:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000027", "sender_id": "U002", "receiver_id": "ACC_104", "amount": 450.0, "timestamp": "2026-10-26T14:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000028", "sender_id": "U005", "receiver_id": "ACC_110", "amount": 6000.0, "timestamp": "2026-10-27T17:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+
+    {"transaction_id": "TXN_SCEN_A1", "sender_id": "U001", "receiver_id": "ACC_150", "amount": 2999.0, "timestamp": "2026-10-30T03:15:00Z", "status": "FLAGGED", "request_type": "COLLECT_REQUEST"},
+
+    {"transaction_id": "TXN_MULE_01", "sender_id": "U003", "receiver_id": "ACC_300", "amount": 9500.0, "timestamp": "2026-10-30T10:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_MULE_02", "sender_id": "U005", "receiver_id": "ACC_300", "amount": 8000.0, "timestamp": "2026-10-30T10:02:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_MULE_03", "sender_id": "U002", "receiver_id": "ACC_300", "amount": 7500.0, "timestamp": "2026-10-30T10:05:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_MULE_04", "sender_id": "U004", "receiver_id": "ACC_300", "amount": 6000.0, "timestamp": "2026-10-30T10:08:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_MULE_05", "sender_id": "U001", "receiver_id": "ACC_300", "amount": 5500.0, "timestamp": "2026-10-30T10:10:00Z", "status": "COMPLETED", "request_type": "PAY"},
+
+    {"transaction_id": "TXN_MULE_06", "sender_id": "U003", "receiver_id": "ACC_300", "amount": 4200.0, "timestamp": "2026-10-30T10:01:00Z", "status": "COMPLETED", "request_type": "PAY"},
+
+    {"transaction_id": "TXN_MULE_OUT1", "sender_id": "U006", "receiver_id": "ACC_401", "amount": 12000.0, "timestamp": "2026-10-30T10:15:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_MULE_OUT2", "sender_id": "U006", "receiver_id": "ACC_402", "amount": 11000.0, "timestamp": "2026-10-30T10:18:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_MULE_OUT3", "sender_id": "U006", "receiver_id": "ACC_403", "amount": 8200.0, "timestamp": "2026-10-30T10:20:00Z", "status": "COMPLETED", "request_type": "PAY"},
+
+    {"transaction_id": "TXN_000040", "sender_id": "U001", "receiver_id": "ACC_101", "amount": 800.0, "timestamp": "2026-10-30T12:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000041", "sender_id": "U001", "receiver_id": "ACC_102", "amount": 600.0, "timestamp": "2026-10-30T12:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000042", "sender_id": "U002", "receiver_id": "ACC_101", "amount": 700.0, "timestamp": "2026-10-30T09:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000043", "sender_id": "U003", "receiver_id": "ACC_106", "amount": 180.0, "timestamp": "2026-10-30T12:45:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000044", "sender_id": "U004", "receiver_id": "ACC_108", "amount": 400.0, "timestamp": "2026-10-30T15:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000045", "sender_id": "U005", "receiver_id": "ACC_109", "amount": 2800.0, "timestamp": "2026-10-30T07:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000046", "sender_id": "U001", "receiver_id": "ACC_103", "amount": 1100.0, "timestamp": "2026-10-30T13:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000047", "sender_id": "U002", "receiver_id": "ACC_104", "amount": 550.0, "timestamp": "2026-10-30T14:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000048", "sender_id": "U003", "receiver_id": "ACC_105", "amount": 1800.0, "timestamp": "2026-10-30T08:15:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000049", "sender_id": "U005", "receiver_id": "ACC_110", "amount": 3500.0, "timestamp": "2026-10-30T16:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+
+    {"transaction_id": "TXN_000050", "sender_id": "U001", "receiver_id": "ACC_101", "amount": 1500.0, "timestamp": "2026-10-25T10:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000051", "sender_id": "U001", "receiver_id": "ACC_102", "amount": 400.0, "timestamp": "2026-10-25T11:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000052", "sender_id": "U002", "receiver_id": "ACC_101", "amount": 900.0, "timestamp": "2026-10-25T09:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000053", "sender_id": "U003", "receiver_id": "ACC_105", "amount": 2200.0, "timestamp": "2026-10-25T08:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000054", "sender_id": "U003", "receiver_id": "ACC_107", "amount": 8000.0, "timestamp": "2026-10-25T09:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000055", "sender_id": "U004", "receiver_id": "ACC_108", "amount": 600.0, "timestamp": "2026-10-25T16:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000056", "sender_id": "U005", "receiver_id": "ACC_109", "amount": 4000.0, "timestamp": "2026-10-25T07:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000057", "sender_id": "U005", "receiver_id": "ACC_110", "amount": 5500.0, "timestamp": "2026-10-25T17:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000058", "sender_id": "U001", "receiver_id": "ACC_103", "amount": 1800.0, "timestamp": "2026-10-24T10:30:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000059", "sender_id": "U002", "receiver_id": "ACC_104", "amount": 750.0, "timestamp": "2026-10-24T14:00:00Z", "status": "COMPLETED", "request_type": "PAY"},
+    {"transaction_id": "TXN_000060", "sender_id": "U003", "receiver_id": "ACC_106", "amount": 250.0, "timestamp": "2026-10-24T12:00:00Z", "status": "COMPLETED", "request_type": "PAY"}
+  ],
+  "graph_edges": [
+    {"source_account": "ACC_201", "target_account": "ACC_300", "amount": 9500.0, "timestamp": "2026-10-30T10:00:00Z", "transaction_id": "TXN_MULE_01"},
+    {"source_account": "ACC_202", "target_account": "ACC_300", "amount": 8000.0, "timestamp": "2026-10-30T10:02:00Z", "transaction_id": "TXN_MULE_02"},
+    {"source_account": "ACC_203", "target_account": "ACC_300", "amount": 7500.0, "timestamp": "2026-10-30T10:05:00Z", "transaction_id": "TXN_MULE_03"},
+    {"source_account": "ACC_204", "target_account": "ACC_300", "amount": 6000.0, "timestamp": "2026-10-30T10:08:00Z", "transaction_id": "TXN_MULE_04"},
+    {"source_account": "ACC_205", "target_account": "ACC_300", "amount": 5500.0, "timestamp": "2026-10-30T10:10:00Z", "transaction_id": "TXN_MULE_05"},
+    {"source_account": "ACC_201", "target_account": "ACC_300", "amount": 4200.0, "timestamp": "2026-10-30T10:01:00Z", "transaction_id": "TXN_MULE_06"},
+
+    {"source_account": "ACC_300", "target_account": "ACC_401", "amount": 12000.0, "timestamp": "2026-10-30T10:15:00Z", "transaction_id": "TXN_MULE_OUT1"},
+    {"source_account": "ACC_300", "target_account": "ACC_402", "amount": 11000.0, "timestamp": "2026-10-30T10:18:00Z", "transaction_id": "TXN_MULE_OUT2"},
+    {"source_account": "ACC_300", "target_account": "ACC_403", "amount": 8200.0, "timestamp": "2026-10-30T10:20:00Z", "transaction_id": "TXN_MULE_OUT3"},
+
+    {"source_account": "ACC_101", "target_account": "ACC_102", "amount": 500.0, "timestamp": "2026-10-29T10:00:00Z", "transaction_id": "TXN_000001"},
+    {"source_account": "ACC_101", "target_account": "ACC_103", "amount": 1200.0, "timestamp": "2026-10-29T11:00:00Z", "transaction_id": "TXN_000003"},
+
+    {"source_account": "ACC_500", "target_account": "ACC_101", "amount": 2000.0, "timestamp": "2026-10-29T09:30:00Z", "transaction_id": null}
+  ],
+  "fraud_intelligence": [
+    {"indicator_id": "IND_001", "indicator_type": "VPA", "indicator_value": "fake-refund-support@upi", "source": "Demo Bank A", "confidence": 0.92, "review_status": "VERIFIED", "reported_at": "2026-10-28T08:00:00Z", "reviewed_at": "2026-10-28T12:00:00Z"},
+    {"indicator_id": "IND_002", "indicator_type": "MOBILE", "indicator_value": "9000000099", "source": "Demo Bank A", "confidence": 0.88, "review_status": "VERIFIED", "reported_at": "2026-10-28T08:30:00Z", "reviewed_at": "2026-10-28T12:30:00Z"},
+    {"indicator_id": "IND_003", "indicator_type": "VPA", "indicator_value": "central-mule@upi", "source": "Demo Bank B", "confidence": 0.78, "review_status": "UNREVIEWED", "reported_at": "2026-10-29T14:00:00Z", "reviewed_at": null},
+    {"indicator_id": "IND_004", "indicator_type": "URL", "indicator_value": "http://paytm-secure.xyz/kyc-update", "source": "Demo Bank A", "confidence": 0.95, "review_status": "VERIFIED", "reported_at": "2026-10-27T10:00:00Z", "reviewed_at": "2026-10-27T14:00:00Z"},
+    {"indicator_id": "IND_005", "indicator_type": "DOMAIN", "indicator_value": "phonepe-kyc-update.in", "source": "Demo CERT", "confidence": 0.91, "review_status": "VERIFIED", "reported_at": "2026-10-26T09:00:00Z", "reviewed_at": "2026-10-26T15:00:00Z"},
+    {"indicator_id": "IND_006", "indicator_type": "URL", "indicator_value": "http://gpay-refund.top/claim", "source": "Demo Bank B", "confidence": 0.85, "review_status": "UNREVIEWED", "reported_at": "2026-10-29T16:00:00Z", "reviewed_at": null},
+    {"indicator_id": "IND_007", "indicator_type": "MOBILE", "indicator_value": "9000000600", "source": "Demo Bank A", "confidence": 0.70, "review_status": "DISPUTED", "reported_at": "2026-10-25T11:00:00Z", "reviewed_at": "2026-10-26T09:00:00Z"},
+    {"indicator_id": "IND_008", "indicator_type": "VPA", "indicator_value": "lottery-scam@upi", "source": "Demo Bank C", "confidence": 0.82, "review_status": "UNREVIEWED", "reported_at": "2026-10-29T18:00:00Z", "reviewed_at": null},
+    {"indicator_id": "IND_009", "indicator_type": "DOMAIN", "indicator_value": "upi-cashback-reward.com", "source": "Demo CERT", "confidence": 0.60, "review_status": "RETRACTED", "reported_at": "2026-10-20T08:00:00Z", "reviewed_at": "2026-10-22T10:00:00Z"},
+    {"indicator_id": "IND_010", "indicator_type": "VPA", "indicator_value": "kyc-scam@upi", "source": "Demo Bank A", "confidence": 0.87, "review_status": "VERIFIED", "reported_at": "2026-10-28T16:00:00Z", "reviewed_at": "2026-10-29T08:00:00Z"}
+  ],
+  "merchant_sessions": [
+    {
+      "session_id": "SESS_001",
+      "merchant_id": "MERCH_001",
+      "expected_amount": 1500.0,
+      "created_at": "2026-10-30T11:00:00Z",
+      "status": "PENDING"
+    },
+    {
+      "session_id": "SESS_002",
+      "merchant_id": "MERCH_002",
+      "expected_amount": 2000.0,
+      "created_at": "2026-10-30T11:30:00Z",
+      "status": "COMPLETED"
+    }
+  ],
+  "payment_events": [
+    {
+      "event_id": "EVT_002",
+      "session_id": "SESS_002",
+      "provider_reference": "SIM_REF_002",
+      "status": "SUCCESS",
+      "simulated": true,
+      "verified_at": "2026-10-30T11:35:00Z"
+    }
+  ],
+  "risk_assessments": [
+    {
+      "assessment_id": "ASM_000001",
+      "transaction_id": "TXN_SCEN_A1",
+      "score": 82,
+      "category": "HIGH",
+      "reasons": [
+        {"code": "COLLECT_REQUEST", "layer": "behaviour", "text": "This is a collect request – money will be debited, not credited.", "weight": 15},
+        {"code": "REPORTED_VPA", "layer": "intelligence", "text": "The recipient VPA has been flagged in fraud intelligence reports.", "weight": 30},
+        {"code": "UNUSUAL_HOUR", "layer": "behaviour", "text": "Transaction initiated at an unusual hour (03:15 UTC).", "weight": 10}
+      ],
+      "recommended_action": "STOP_AND_REVIEW",
+      "playbook_matches": [{"playbook_id": "PB_FAKE_COLLECT", "name": "FAKE_COLLECT_REQUEST", "warning": "This appears to be a fake collect request designed to trick you into sending money.", "recommended_action": "STOP_AND_REVIEW"}],
+      "model_version": "0.1.0-rules",
+      "created_at": "2026-10-30T03:15:05Z"
+    }
+  ],
+  "grievances": []
+}

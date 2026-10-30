@@ -4,7 +4,7 @@ import { getStoredApiMode, setStoredApiMode, apiService } from "../services/apiS
 const ApiModeContext = createContext(null);
 
 export const ApiModeProvider = ({ children }) => {
-  const [mode, setMode] = useState(getStoredApiMode());
+  const [mode, setMode] = useState("LIVE");
   const [isBackendReachable, setIsBackendReachable] = useState(false);
   const [isCheckingBackend, setIsCheckingBackend] = useState(false);
   const [lastCheckTime, setLastCheckTime] = useState(null);
@@ -13,6 +13,10 @@ export const ApiModeProvider = ({ children }) => {
     setIsCheckingBackend(true);
     const res = await apiService.pingBackend();
     setIsBackendReachable(res.connected);
+    if (res.connected) {
+      setMode("LIVE");
+      setStoredApiMode("LIVE");
+    }
     setLastCheckTime(new Date());
     setIsCheckingBackend(false);
     return res.connected;
@@ -21,8 +25,8 @@ export const ApiModeProvider = ({ children }) => {
   useEffect(() => {
     // Initial check on mount
     checkConnectivity();
-    // Periodic check every 30 seconds
-    const interval = setInterval(checkConnectivity, 30000);
+    // Periodic check every 15 seconds
+    const interval = setInterval(checkConnectivity, 15000);
     return () => clearInterval(interval);
   }, [checkConnectivity]);
 

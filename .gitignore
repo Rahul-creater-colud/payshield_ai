@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+**/.env
+**/.env.*
+!**/.env.example
 
 # Python
 __pycache__/
@@ -16,9 +19,9 @@ node_modules/
 
 # Build files
 dist/
+**/dist/
 
 # Database files
 *.db
-
-# Ignore accidental nested duplicate folder
-upi-fraud-shield/upi-fraud-shield/
+**/*.db
+!**/payshield_snapshot.db

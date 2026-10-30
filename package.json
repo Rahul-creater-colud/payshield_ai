@@ -1,4 +1,12 @@
 {
+  "name": "payshield-ai-workspace",
+  "version": "1.0.0",
+  "scripts": {
+    "dev:backend": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "dev:frontend": "cd upi-fraud-shield/upi-fraud-shield && npm run dev",
+    "build:frontend": "cd upi-fraud-shield/upi-fraud-shield && npm run build",
+    "test:backend": "cd backend && python -m pytest -q"
+  },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0"

@@ -20,6 +20,7 @@ from app.routers import (
     dashboard,
     intelligence,
     admin,
+    frontend_api,
 )
 
 
@@ -62,6 +63,7 @@ def create_app() -> FastAPI:
     _app.include_router(dashboard.router)
     _app.include_router(intelligence.router)
     _app.include_router(admin.router)
+    _app.include_router(frontend_api.router)
 
     return _app
 

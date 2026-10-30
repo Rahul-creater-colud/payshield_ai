@@ -1,10 +1,24 @@
+# Environment variables
 .env
 .env.*
 !.env.example
+
+# Python
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
 venv/
+
+# Node.js
 node_modules/
+**/node_modules/
+
+# Build files
+dist/
+
+# Database files
 *.db
+
+# Ignore accidental nested duplicate folder
+upi-fraud-shield/upi-fraud-shield/

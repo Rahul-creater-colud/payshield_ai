@@ -1,7 +1,7 @@
 # PayShield AI – API Contract & Architecture Specification
 
 ## Overview
-**PayShield AI** is a real-time, context-aware fraud prevention backend MVP for UPI payments, designed for hackathons and demo environments using synthetic data and simulated transactions.
+**PayShield AI** is a local, rule-based risk assessment prototype for submitted transaction records. It uses synthetic demo data, has no authorized NPCI/bank/payment-provider integration, does not monitor real UPI traffic, and cannot execute or block real payments. Risk scores are illustrative heuristics, not validated ML output or proof of fraud.
 
 ---
 
@@ -95,7 +95,9 @@ Every HTTP error (4xx / 5xx) strictly conforms to the envelope:
 
 ### 4.6 Dashboard Analytics
 * `GET /api/dashboard/summary`
-  * Returns aggregated metrics: `totals`, `risk_distribution`, `recent_alerts`, `grievance_summary`, `suspicious_clusters`, `data_label: "DEMO / SYNTHETIC DATA"`.
+  * Returns an aggregate of stored local records and includes `data_label: "DEMO / SYNTHETIC DATA"`.
+* `GET /api/v1/fraud/analytics`
+  * Returns counts and chart series derived from stored transactions and latest assessments. `blockedTransactions` requires a verified, non-simulated provider event; `totalFraudPreventedAmount` is `null` unless verified events support a defined calculation.
 
 ### 4.7 Fraud Intelligence
 * `GET /api/intelligence`
@@ -111,4 +113,3 @@ Every HTTP error (4xx / 5xx) strictly conforms to the envelope:
 ### 4.8 Admin & Recovery
 * `POST /api/admin/reset`
   * Guarded by `ENABLE_ADMIN` setting. Drops all tables, re-creates schema, and reloads seed data.
-

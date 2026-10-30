@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
 from typing import Generator
 
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
 
 from app.config import settings
@@ -45,32 +45,23 @@ def get_db() -> Generator[Session, None, None]:
 
 
 # ---------------------------------------------------------------------------
-# Startup: auto-restore from snapshot if DB is missing / corrupt
+# Startup: validate existing DB; initialize new schema in application lifespan
 # ---------------------------------------------------------------------------
 def ensure_db() -> None:
-    """Called at app startup. If the SQLite file is missing or corrupt,
-    attempt to restore from the fallback snapshot."""
+    """Validate an existing SQLite file without replacing application data."""
     if not settings.DB_URL.startswith("sqlite"):
         return
 
     db_path = settings.DB_URL.replace("sqlite:///", "")
-    snapshot_path = settings.SNAPSHOT_PATH
-
-    # Check if DB file exists
     if os.path.exists(db_path):
-        # Quick integrity check
         try:
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
-            return  # DB is fine
-        except Exception:
-            logger.warning("Database file appears corrupt. Attempting restore from snapshot.")
-            os.remove(db_path)
-
-    # Try to restore
-    if os.path.exists(snapshot_path):
-        logger.warning("Database file missing. Restoring from fallback snapshot: %s", snapshot_path)
-        os.makedirs(os.path.dirname(db_path) or ".", exist_ok=True)
-        shutil.copy2(snapshot_path, db_path)
+        except SQLAlchemyError as exc:
+            logger.exception("Configured SQLite database is unavailable: %s", db_path)
+            raise RuntimeError(
+                f"Configured SQLite database is unavailable: {db_path}. "
+                "Restore a backup explicitly before restarting."
+            ) from exc
     else:
-        logger.info("No database file and no snapshot found. Will create fresh DB on init.")
+        logger.info("No SQLite database found at %s. A new empty database will be created.", db_path)

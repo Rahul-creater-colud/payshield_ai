@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.errors import register_error_handlers
-from app.database import ensure_db
+from app.database import Base, engine, ensure_db
 
 from app.routers import (
     health,
@@ -27,6 +27,7 @@ from app.routers import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ensure_db()
+    Base.metadata.create_all(bind=engine)
     yield
 
 
@@ -34,8 +35,8 @@ def create_app() -> FastAPI:
     _app = FastAPI(
         title="PayShield AI",
         description=(
-            "Context-aware UPI fraud prevention – hackathon MVP. "
-            "All data is SYNTHETIC. Payments are SIMULATED."
+            "Local rule-based risk assessment prototype using synthetic data. "
+            "No NPCI or payment-provider integration; payments are not executed or blocked."
         ),
         version=settings.MODEL_VERSION,
         lifespan=lifespan,
@@ -68,7 +69,7 @@ def create_app() -> FastAPI:
     @_app.get("/")
     def root():
         return {
-            "service": "PayShield AI - UPI Fraud Prevention API",
+            "service": "PayShield AI - Local Risk Assessment API",
             "version": settings.MODEL_VERSION,
             "status": "running",
             "documentation": "/docs",

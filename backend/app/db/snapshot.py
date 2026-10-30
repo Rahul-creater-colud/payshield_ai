@@ -1,4 +1,4 @@
-﻿"""Save / restore a DB snapshot for offline fallback demo.
+﻿"""Explicitly save or restore a SQLite snapshot for manual demo recovery.
 
 Usage:
     python -m app.db.snapshot save
@@ -53,4 +53,3 @@ if __name__ == "__main__":
     else:
         print(f"Unknown command: {cmd}. Use 'save' or 'restore'.")
         sys.exit(1)
-

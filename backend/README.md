@@ -1,119 +1,36 @@
-# PayShield AI – Backend Service
+# PayShield Backend
 
-Context-aware UPI fraud prevention system – Hackathon MVP with synthetic data and simulated payment transactions.
+FastAPI and SQLAlchemy backend for local, heuristic transaction risk assessment. This prototype has no authorized NPCI, bank, or payment-provider integration and does not execute or block real payments. Risk scores are heuristics, not validated ML output or proof of fraud. Seed data and the existing demo database are synthetic.
 
----
+## Storage and startup
 
-## Tech Stack
-* **Language & Framework**: Python 3.10+ / FastAPI / Starlette
-* **Persistence & ORM**: SQLAlchemy 2.x with SQLite (`payshield.db`)
-* **Network & Graph Analytics**: NetworkX
-* **Validation & Settings**: Pydantic v2 & Pydantic-Settings
-* **Testing**: Pytest & HTTPX TestClient
+The default SQLite URL is relative to the process working directory. Start the server from `backend/` to use `backend/payshield.db`:
 
----
-
-## Directory Structure
-```
-backend/
-├── app/
-│   ├── main.py              # Application factory & router registration
-│   ├── config.py            # Environment configuration & risk thresholds
-│   ├── errors.py            # Error envelope { "error": { "code", "message", "details" } }
-│   ├── database.py          # SQLAlchemy engine, session generator & auto-recovery
-│   ├── models.py            # 9 ORM tables
-│   ├── schemas.py           # Pydantic v2 request/response schemas
-│   ├── db/
-│   │   ├── init_db.py       # Database table initialisation
-│   │   ├── seed.py          # Seed loader from JSON
-│   │   ├── reset.py         # Full database drop, recreate, seed, and snapshot
-│   │   └── snapshot.py      # SQLite fallback snapshot save & restore
-│   ├── data/
-│   │   ├── seed.json        # Synthetic seed data for scenarios A, B, C, D, LOW
-│   │   └── fallback/        # Offline fallback database snapshot
-│   ├── engine/              # Modular heuristic risk calculation engines
-│   │   ├── behaviour.py     # User baseline deviation & velocity checks
-│   │   ├── graph_layer.py   # Fan-in, fan-out, rapid onward & multi-hop checks
-│   │   ├── playbooks.py     # Pattern-based scam playbooks (fake collect, refund scam)
-│   │   └── scoring.py       # Score combination, risk categorization & ML hook
-│   ├── routers/             # API Routers
-│   │   ├── health.py        # /health and /api/health
-│   │   ├── catalog.py       # /api/catalog
-│   │   ├── risk.py          # /api/risk/assess and /api/risk/assessments
-│   │   ├── urls.py          # /api/urls/scan
-│   │   ├── network.py       # /api/accounts/{id}/network
-│   │   ├── grievances.py    # /api/grievances
-│   │   ├── dashboard.py     # /api/dashboard/summary
-│   │   ├── intelligence.py  # /api/intelligence
-│   │   └── admin.py         # /api/admin/reset
-│   └── services/            # Business logic orchestration
-│       ├── risk_service.py
-│       ├── url_service.py
-│       ├── graph_service.py
-│       ├── grievance_service.py
-│       ├── dashboard_service.py
-│       └── intelligence_service.py
-├── tests/                   # Pytest test suite (93 tests covering all endpoints)
-├── pytest.ini               # Test configuration
-├── smoke_test.py            # Standalone 50-check end-to-end smoke test
-├── requirements.txt         # Python dependencies
-├── API_CONTRACT.md          # Complete API specification and contract rules
-└── .env.example             # Sample environment variables
+```powershell
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
----
+Startup creates tables in a missing/new database but does not restore a snapshot or seed demo records. Existing files are preserved. If an existing SQLite file is corrupt, startup raises an error and asks for an explicit backup restore rather than silently replacing data.
 
-## Getting Started
+`python -m app.db.reset` is destructive: it drops tables and loads synthetic records from `app/data/seed.json`. Run it only when you intentionally want to replace the current database. Snapshot restore is also an explicit operation: `python -m app.db.snapshot restore`.
 
-### 1. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+## API used by the dashboard
 
-### 2. Initialise / Reset Database
-```bash
-python -m app.db.reset
-```
-This drops existing tables, creates all 9 tables, loads `app/data/seed.json`, and updates the fallback snapshot in `app/data/fallback/payshield_snapshot.db`.
+- `GET /health` and `GET /api/v1/health` report the local service, database check, heuristic engine, and synthetic-data status.
+- `POST /api/v1/fraud/analyze` assesses and stores a submitted transaction record; it does not initiate a payment.
+- `GET /api/v1/transactions` and `GET /api/v1/transactions/{id}` return stored records and assessments. Missing records return 404.
+- `GET /api/v1/fraud/analytics` derives counts and charts from stored records. Provider-blocked counts require verified, non-simulated payment events; fraud-prevented amount is `null` until supported by verified records.
+- `GET /api/v1/fraud/alerts` derives alerts from stored medium/high assessments. Resolution notes are persisted.
+- `GET /api/v1/collect-requests` reports that no live integration is available; collect actions return 501.
+- `POST /api/v1/fraud/screenshot-ocr` rejects uploaded-image analysis with 501. A fixed sample is available only through an explicitly labeled demo sample key.
 
-### 3. Run Tests
-```bash
+Deprecated `/api/v1/demo/...` routes return synthetic examples and identify their data as demo. The frontend LIVE mode does not silently substitute these examples when the backend fails.
+
+## Development checks
+
+```powershell
 python -m pytest -q
 ```
-All 93 tests in `tests/` will execute and pass.
 
-You can also run the comprehensive smoke test:
-```bash
-python smoke_test.py
-```
-
-### 4. Start Development Server
-```bash
-uvicorn app.main:app --reload
-```
-Once started:
-* Interactive Swagger Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
-* Alternative ReDoc: [http://localhost:8000/redoc](http://localhost:8000/redoc)
-* Health Check: [http://localhost:8000/health](http://localhost:8000/health)
-
----
-
-## Offline Fallback Snapshot
-If the database file is removed or corrupted during a live demonstration, the application automatically restores from `app/data/fallback/payshield_snapshot.db` on startup.
-You can also manually restore anytime:
-```bash
-python -m app.db.snapshot restore
-```
-
----
-
-## Contract & Risk Rules
-* **Risk Categories**:
-  - `LOW`: 0 – 39 (`PROCEED`)
-  - `MEDIUM`: 40 – 69 (`CAUTION_VERIFY`)
-  - `HIGH`: 70 – 100 (`STOP_AND_REVIEW`)
-* **New Recipient Rule**: Sending to a new recipient alone never yields `HIGH`.
-* **Zero Credential Exposure**: Any request containing `pin`, `otp`, `password`, `cvv`, or `secret` is rejected (`422`).
-* **URL Static Analysis**: Static scanning without outbound network requests. HTTPS alone never marks a domain safe.
-* **Audit Trail**: Grievance status transitions require a reviewer note and prevent reopening resolved/rejected cases.
-
+Swagger: `http://127.0.0.1:8000/docs`; health: `http://127.0.0.1:8000/health`.

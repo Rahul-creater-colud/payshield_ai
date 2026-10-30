@@ -21,10 +21,14 @@ def _health_check(db: Session) -> dict:
     except Exception:
         db_status = "error"
     return {
-        "status": "ok",
+        "status": "ok" if db_status == "ok" else "degraded",
         "service": "payshield-backend",
         "version": settings.MODEL_VERSION,
         "db": db_status,
+        "detection_engine": "rule-based heuristics",
+        "payment_provider_integration": False,
+        "simulated": True,
+        "data_label": "DEMO / SYNTHETIC DATA",
         "time": datetime.now(timezone.utc).isoformat(),
     }
 

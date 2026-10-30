@@ -9,8 +9,10 @@ def test_api_v1_health(client):
     body = r.json()
     assert body["status"] == "healthy"
     assert "version" in body
-    assert "ai_model" in body
-    assert "threat_db_records" in body
+    assert body["detection_engine"] == "rule-based heuristics"
+    assert body["payment_provider_integration"] is False
+    assert body["simulated"] is True
+    assert body["data_label"] == "DEMO / SYNTHETIC DATA"
 
 
 def test_api_v1_analyze_high_risk_collect(client):
@@ -28,9 +30,10 @@ def test_api_v1_analyze_high_risk_collect(client):
     body = r.json()
     assert body["success"] is True
     data = body["data"]
-    assert data["status"] == "BLOCKED"
+    assert data["status"] == "STOP_RECOMMENDED"
     assert data["riskCategory"] == "HIGH"
     assert data["riskScore"] >= 70
+    assert data["payment_executed"] is False
     assert len(data["reasons"]) > 0
     assert data["indicators"]["collectRequestAnomaly"] is True
 
@@ -69,7 +72,8 @@ def test_api_v1_get_collect_requests(client):
     assert r.status_code == 200
     body = r.json()
     assert body["success"] is True
-    assert len(body["data"]) >= 4
+    assert body["data"] == []
+    assert body["available"] is False
 
 
 def test_api_v1_action_collect_request(client):
@@ -77,11 +81,8 @@ def test_api_v1_action_collect_request(client):
         "/api/v1/collect-requests/col-201/action",
         json={"action": "REJECT"},
     )
-    assert r.status_code == 200
-    body = r.json()
-    assert body["success"] is True
-    assert body["action"] == "REJECT"
-    assert body["status"] == "REJECTED"
+    assert r.status_code == 501
+    assert "payment-provider integration" in r.json()["error"]["message"]
 
 
 def test_api_v1_fraud_analytics(client):
@@ -92,7 +93,9 @@ def test_api_v1_fraud_analytics(client):
     assert "metrics" in body
     assert "dailyActivity" in body
     assert "riskDistribution" in body
-    assert body["metrics"]["totalTransactions"] > 0
+    assert body["metrics"]["totalTransactions"] == client.get("/api/v1/transactions").json()["total"]
+    assert body["metrics"]["totalFraudPreventedAmount"] is None
+    assert body["data_label"] == "DEMO / SYNTHETIC DATA"
 
 
 def test_api_v1_screenshot_ocr_sample(client):
@@ -115,16 +118,40 @@ def test_api_v1_fraud_alerts(client):
     body = r.json()
     assert body["success"] is True
     assert "summary" in body
-    assert len(body["data"]) >= 4
+    assert body["total"] == len(body["data"])
+    assert all(item["id"].startswith("ASM_") for item in body["data"])
+    assert body["summary"]["fraudPreventedAmount"] is None
 
 
 def test_api_v1_resolve_alert(client):
+    alerts = client.get("/api/v1/fraud/alerts").json()["data"]
+    assert alerts
+    alert_id = alerts[0]["id"]
     r = client.post(
-        "/api/v1/fraud/alerts/alt-501/resolve",
+        f"/api/v1/fraud/alerts/{alert_id}/resolve",
         json={"notes": "Beneficiary frozen by operations"},
     )
     assert r.status_code == 200
     body = r.json()
     assert body["success"] is True
     assert body["status"] == "RESOLVED"
+    assert any(item["id"] == alert_id and item["status"] == "RESOLVED"
+               for item in client.get("/api/v1/fraud/alerts").json()["data"])
 
+
+def test_legacy_demo_endpoints_are_labeled_and_do_not_claim_blocked_payments(client):
+    analytics = client.get("/api/v1/demo/fraud/analytics")
+    assert analytics.status_code == 200
+    analytics_body = analytics.json()
+    assert analytics_body["data_label"].startswith("DEMO DATA")
+    assert analytics_body["simulated"] is True
+    assert analytics_body["metrics"]["blockedTransactions"] == 0
+    assert analytics_body["metrics"]["totalFraudPreventedAmount"] is None
+    assert all("fraudPrevented" not in item for item in analytics_body["dailyActivity"])
+
+    transactions = client.get("/api/v1/demo/transactions")
+    assert transactions.status_code == 200
+    transaction_body = transactions.json()
+    assert transaction_body["data_label"].startswith("DEMO DATA")
+    assert transaction_body["simulated"] is True
+    assert all(item["status"] != "BLOCKED" for item in transaction_body["data"])

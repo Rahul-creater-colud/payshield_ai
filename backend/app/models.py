@@ -1,4 +1,4 @@
-"""SQLAlchemy ORM models – 9 tables for PayShield AI.
+"""SQLAlchemy ORM models for PayShield AI.
 
 Tables:
     1. demo_users
@@ -71,6 +71,19 @@ class RiskAssessment(Base):
     playbook_matches = Column(JSON, nullable=False, default=list)
     model_version = Column(String, nullable=False)
     created_at = Column(String, nullable=False)
+
+
+class RiskAssessmentResolution(Base):
+    __tablename__ = "risk_assessment_resolutions"
+
+    assessment_id = Column(
+        String,
+        ForeignKey("risk_assessments.assessment_id"),
+        primary_key=True,
+    )
+    status = Column(String, nullable=False, default="RESOLVED")
+    notes = Column(Text, nullable=True)
+    updated_at = Column(String, nullable=False)
 
 
 class AccountOrVPA(Base):

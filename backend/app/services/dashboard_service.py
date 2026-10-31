@@ -10,6 +10,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.schemas import LOCAL_DATA_LABEL
 from app.models import (
     Transaction,
     RiskAssessment,
@@ -189,7 +190,7 @@ def get_analytics(db: Session, date_range: str = "7D", txn_type: str = "ALL") ->
             {"hour": hour, "volume": count}
             for hour, count in sorted(hourly.items())
         ],
-        "data_label": "DEMO / SYNTHETIC DATA",
+        "data_label": LOCAL_DATA_LABEL,
         "simulated": True,
         "detection_engine": "rule-based heuristics",
         "payment_provider_integration": False,
@@ -265,6 +266,6 @@ def get_summary(db: Session) -> Dict[str, Any]:
         "recent_alerts": recent_alerts,
         "grievance_summary": grv,
         "suspicious_clusters": clusters,
-        "data_label": "DEMO / SYNTHETIC DATA",
+        "data_label": LOCAL_DATA_LABEL,
         "simulated": True,
     }

@@ -133,7 +133,7 @@ export default function SuspiciousUrlScanner() {
               <p className="mt-3 rounded-md bg-canvas p-3 text-xs text-slate-600">No indicators were returned by the local rules.</p>
             )}
           </section>
-          <p className="text-[11px] leading-5 text-slate-500">{result.disclaimer || "Prototype using synthetic data. Risk scores are illustrative heuristics, not proof of fraud."}</p>
+          <p className="text-[11px] leading-5 text-slate-500">{result.disclaimer || "Local heuristic prototype. Risk scores are illustrative, not proof of fraud."}</p>
         </div>
       )}
     </div>

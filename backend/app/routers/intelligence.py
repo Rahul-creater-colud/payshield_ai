@@ -51,7 +51,7 @@ def list_intelligence(
     return {
         "items": [_to_item(i) for i in items],
         "total": total,
-        "data_label": "SYNTHETIC",
+        "data_label": "LOCAL INDICATOR RECORDS (NOT INDEPENDENTLY VERIFIED)",
     }
 
 

@@ -25,7 +25,7 @@ Returns local backend/database status, the rule-based detection engine, an expli
 
 The response contains metrics and chart series calculated from stored transaction and assessment records. `totalTransactions`, `safeTransactions`, `suspiciousTransactions`, `stopReviewRecommendations`, and `assessedTransactions` describe PayShield records/decisions. `blockedTransactions` counts only verified non-simulated provider events. `totalFraudPreventedAmount` is `null` because the prototype has no verified events to support that claim. Empty sets return zero counts and empty/zero-valued series.
 
-Responses include `data_label: "DEMO / SYNTHETIC DATA"`, `simulated: true`, `detection_engine: "rule-based heuristics"`, and `payment_provider_integration: false`.
+Responses include `data_label: "LOCAL PROTOTYPE RECORDS (MAY INCLUDE SYNTHETIC SEED DATA)"`, `simulated: true`, `detection_engine: "rule-based heuristics"`, and `payment_provider_integration: false`. This avoids asserting that user-submitted rows have synthetic provenance.
 
 ### Transactions and analysis
 

@@ -129,7 +129,7 @@ export const TransactionAnalysis = () => {
       setResult({
         ...data,
         source: response.source,
-        data_label: data.data_label || (mode === "MOCK" ? "DEMO DATA" : "DEMO / SYNTHETIC DATA")
+        data_label: data.data_label || (mode === "MOCK" ? "DEMO DATA" : "LOCAL PROTOTYPE RECORDS")
       });
 
       if (data.riskCategory === "HIGH") {
@@ -175,7 +175,7 @@ export const TransactionAnalysis = () => {
             Submit transaction details for local rule-based analysis with an optional experimental ML estimate. No UPI network, NPCI registry, or payment provider is connected.
           </p>
           <p className="mt-1 text-[11px] font-semibold text-amber-700">
-            Analysis-only prototype • records and preset scenarios are demo/synthetic data • no payment is executed or blocked
+            Analysis-only prototype • preset scenarios and seed rows may be synthetic; submitted records are local • no payment is executed or blocked
           </p>
         </div>
 

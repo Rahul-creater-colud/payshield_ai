@@ -12,9 +12,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 # Constants
 # ---------------------------------------------------------------------------
 DISCLAIMER = (
-    "Prototype using synthetic data. "
-    "Risk scores are illustrative heuristics, not proof of fraud."
+    "Local risk-assessment prototype; stored records may include synthetic seed data. "
+    "Scores are illustrative heuristics, not proof of fraud."
 )
+LOCAL_DATA_LABEL = "LOCAL PROTOTYPE RECORDS (MAY INCLUDE SYNTHETIC SEED DATA)"
 
 FORBIDDEN_FIELDS = {"pin", "otp", "password", "card_number", "cvv", "secret"}
 
@@ -377,7 +378,7 @@ class DashboardSummaryResponse(BaseModel):
     recent_alerts: List[RecentAlert]
     grievance_summary: GrievanceSummary
     suspicious_clusters: List[SuspiciousCluster] = []
-    data_label: str = "DEMO / SYNTHETIC DATA"
+    data_label: str = LOCAL_DATA_LABEL
     simulated: bool = True
 
 
@@ -399,7 +400,7 @@ class IntelligenceItem(BaseModel):
 class IntelligenceListResponse(BaseModel):
     items: List[IntelligenceItem]
     total: int
-    data_label: str = "SYNTHETIC"
+    data_label: str = "LOCAL INDICATOR RECORDS (NOT INDEPENDENTLY VERIFIED)"
 
 
 class IntelligenceReportRequest(BaseModel):

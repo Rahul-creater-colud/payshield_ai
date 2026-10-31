@@ -120,7 +120,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
               </span>
             </div>
             <p className="mt-2 text-[10px] leading-4 text-slate-400">
-              {mode === "MOCK" ? "Explicit demo fixtures selected." : "Heuristic prototype · synthetic records"}
+              {mode === "MOCK" ? "Explicit demo fixtures selected." : "Heuristic prototype · local records"}
             </p>
             <p className="text-[10px] leading-4 text-slate-400">No NPCI or payment-provider link</p>
           </div>

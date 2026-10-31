@@ -92,7 +92,7 @@ export const ApiStatusBanner = () => {
           <span className="hidden md:inline text-slate-400 text-[11px] border-l border-slate-700/60 pl-2.5">
             {isLiveMode
               ? isBackendReachable
-                ? "Local rule-based service connected • DEMO / SYNTHETIC DATA"
+                ? "Local rule-based service connected • prototype records may include synthetic seeds"
                 : "No data displayed until the backend reconnects."
               : "Explicit demo data and simulated actions • not live UPI monitoring."}
           </span>

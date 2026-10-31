@@ -73,7 +73,7 @@ export const ErrorPanel = ({ title = "Data unavailable", error, onRetry }) => (
   </section>
 );
 
-export const DataLabel = ({ children = "DEMO / SYNTHETIC DATA" }) => (
+export const DataLabel = ({ children = "LOCAL PROTOTYPE RECORDS" }) => (
   <span className="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-amber-800">
     {children}
   </span>

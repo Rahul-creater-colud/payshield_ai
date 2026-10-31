@@ -169,7 +169,7 @@ export const AlertsRiskReport = () => {
               </h3>
             </div>
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-              {mode === "MOCK" ? "DEMO DATA" : "DEMO / SYNTHETIC DATA"}
+              {mode === "MOCK" ? "DEMO DATA" : "LOCAL PROTOTYPE RECORDS"}
             </span>
           </div>
 

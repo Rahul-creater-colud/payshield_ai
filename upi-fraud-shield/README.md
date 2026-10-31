@@ -6,7 +6,7 @@ React/Vite frontend for PayShield's local, rule-based transaction risk assessmen
 
 - **LIVE** calls the local FastAPI endpoints. Failed requests show errors and do not fall back to fixtures.
 - **MOCK** uses static/in-memory synthetic fixtures for UI demonstrations and labels them `DEMO DATA`.
-- Backend records and the existing SQLite demo dataset are synthetic and labeled `DEMO / SYNTHETIC DATA`. Starting with a new DB yields an empty dashboard.
+- The seed fixture and MOCK fixtures are synthetic. Live backend records use `LOCAL PROTOTYPE RECORDS (MAY INCLUDE SYNTHETIC SEED DATA)` because local databases can also contain user-submitted records. Starting with a new DB yields an empty dashboard.
 - Uploaded-image OCR and live collect-request controls are unavailable. Fixed screenshot examples are demo responses, not analyzed uploads.
 - Merchant ledger sessions and callbacks are explicitly simulated local records; they do not represent provider-confirmed payments.
 

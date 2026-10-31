@@ -90,7 +90,10 @@ export const Dashboard = () => {
         throw new Error("The backend returned invalid dashboard statistics.");
       }
       setMetrics(analyticsData.metrics);
-      setDataLabel(analyticsData.data_label || (mode === "MOCK" ? "DEMO DATA" : ""));
+      setDataLabel(
+        analyticsData.data_label ||
+        (mode === "MOCK" ? "DEMO DATA" : "LOCAL PROTOTYPE RECORDS")
+      );
       setDailyData(analyticsData.dailyActivity);
       setRiskDist(analyticsData.riskDistribution);
 
@@ -138,8 +141,6 @@ export const Dashboard = () => {
     );
   }
 
-  const isDemoData = mode === "MOCK" || dataLabel.includes("DEMO");
-
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="surface-card p-5 sm:p-6">
@@ -151,7 +152,7 @@ export const Dashboard = () => {
                 {isBackendReachable ? "LOCAL SERVICE CONNECTED" : "API RESPONSE RECEIVED"}
               </span>
               <span className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-800">
-                {isDemoData ? "DEMO / SYNTHETIC DATA" : "LOCAL RECORDS"}
+                {mode === "MOCK" ? "DEMO DATA" : dataLabel}
               </span>
             </div>
             <h2 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">

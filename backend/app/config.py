@@ -56,8 +56,8 @@ class Settings(BaseSettings):
 
     # Disclaimer
     DISCLAIMER: str = (
-        "Prototype using synthetic data. "
-        "Risk scores are illustrative heuristics, not proof of fraud."
+        "Local risk-assessment prototype; stored records may include synthetic seed data. "
+        "Scores are illustrative heuristics, not proof of fraud."
     )
 
     @field_validator("CORS_ORIGINS", mode="before")

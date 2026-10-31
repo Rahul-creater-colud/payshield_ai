@@ -1,6 +1,6 @@
 # PayShield Backend
 
-FastAPI and SQLAlchemy backend for local, heuristic transaction risk assessment. This prototype has no authorized NPCI, bank, or payment-provider integration and does not execute or block real payments. The final risk score is heuristic. An optional experimental Random Forest returns a separate estimate trained on generated synthetic labels; it is not validated ML evidence or proof of fraud. Seed data and the existing demo database are synthetic.
+FastAPI and SQLAlchemy backend for local, heuristic transaction risk assessment. This prototype has no authorized NPCI, bank, or payment-provider integration and does not execute or block real payments. The final risk score is heuristic. An optional experimental Random Forest returns a separate estimate trained on generated synthetic labels; it is not validated ML evidence or proof of fraud. The seed fixture is synthetic; an existing database may also contain user-submitted prototype records, so live API labels do not assume every row is synthetic.
 
 ## Storage and startup
 

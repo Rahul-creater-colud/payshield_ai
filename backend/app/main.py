@@ -36,7 +36,7 @@ def create_app() -> FastAPI:
     _app = FastAPI(
         title="PayShield AI",
         description=(
-            "Local rule-based risk assessment prototype using synthetic data. "
+            "Local rule-based risk assessment prototype; stored records may include synthetic seed data. "
             "No NPCI or payment-provider integration; payments are not executed or blocked."
         ),
         version=settings.MODEL_VERSION,

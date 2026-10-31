@@ -30,6 +30,7 @@ from app.config import settings
 from app.database import get_db
 from app import models
 from app.errors import AppError, ErrorCode
+from app.schemas import LOCAL_DATA_LABEL
 from app.engine import behaviour as behaviour_engine
 from app.engine import graph_layer as graph_engine
 from app.engine import playbooks as playbook_engine
@@ -304,7 +305,7 @@ def api_v1_health(db: Session = Depends(get_db)):
         "detection_engine": "rule-based heuristics",
         "ml_model": ml_model_service.status(),
         "payment_provider_integration": False,
-        "data_label": "DEMO / SYNTHETIC DATA",
+        "data_label": LOCAL_DATA_LABEL,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "simulated": True,
     }
@@ -599,7 +600,7 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
             ],
             "url_scan": url_scan,
             "simulated": True,
-            "data_label": "DEMO / SYNTHETIC DATA",
+            "data_label": LOCAL_DATA_LABEL,
             "payment_executed": False,
         },
     }
@@ -842,7 +843,7 @@ def _transaction_response(
         ),
         "reasons": reasons,
         "simulated": True,
-        "data_label": "DEMO / SYNTHETIC DATA",
+        "data_label": LOCAL_DATA_LABEL,
     }
 
 
@@ -902,7 +903,7 @@ def api_v1_get_stored_transactions(
         "success": True,
         "total": len(results),
         "data": results[:limit],
-        "data_label": "DEMO / SYNTHETIC DATA",
+        "data_label": LOCAL_DATA_LABEL,
         "simulated": True,
     }
 
@@ -1214,7 +1215,7 @@ def api_v1_get_stored_fraud_alerts(db: Session = Depends(get_db)):
             "fraudPreventedAmount": None,
             "payment_provider_integration": False,
         },
-        "data_label": "DEMO / SYNTHETIC DATA",
+        "data_label": LOCAL_DATA_LABEL,
         "simulated": True,
         "data": items,
     }

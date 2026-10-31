@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.services.ml_model_service import ml_model_service
 
 router = APIRouter()
 
@@ -26,6 +27,7 @@ def _health_check(db: Session) -> dict:
         "version": settings.MODEL_VERSION,
         "db": db_status,
         "detection_engine": "rule-based heuristics",
+        "ml_model": ml_model_service.status(),
         "payment_provider_integration": False,
         "simulated": True,
         "data_label": "DEMO / SYNTHETIC DATA",

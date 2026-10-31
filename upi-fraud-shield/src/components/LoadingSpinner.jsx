@@ -2,7 +2,7 @@ import React from "react";
 import { ShieldCheck, Radar } from "lucide-react";
 
 export const LoadingSpinner = ({
-  message = "Analyzing transaction with AI threat intelligence...",
+  message = "Running local heuristic assessment...",
   subtext = "Local heuristic processing; no payment is executed or blocked",
   size = "md"
 }) => {

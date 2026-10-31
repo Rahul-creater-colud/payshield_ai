@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, AlertTriangle, ShieldAlert, CheckCircle2, Ban, CircleHelp } from "lucide-react";
+import { ShieldCheck, AlertTriangle, ShieldAlert, CheckCircle2, CircleHelp } from "lucide-react";
 
 export const RiskBadge = ({ category = "LOW", status, score, size = "md", showScore = true }) => {
   const normCategory = (category || "LOW").toUpperCase();
@@ -27,8 +27,8 @@ export const RiskBadge = ({ category = "LOW", status, score, size = "md", showSc
   if (isHigh) {
     bgClass = "bg-rose-500/15 text-rose-400 border-rose-500/30 shadow-[0_0_12px_rgba(244,63,94,0.25)]";
     dotClass = "bg-rose-500 animate-ping";
-    label = normStatus === "BLOCKED" ? "BLOCKED" : "HIGH RISK";
-    Icon = normStatus === "BLOCKED" ? Ban : ShieldAlert;
+    label = normStatus === "BLOCKED" ? "STOP / REVIEW" : "HIGH RISK";
+    Icon = ShieldAlert;
   } else if (isMedium) {
     bgClass = "bg-amber-500/15 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]";
     dotClass = "bg-amber-400";

@@ -142,79 +142,68 @@ export const Dashboard = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Top Welcome & Quick Actions Bar */}
-      <div className="rounded-3xl bg-gradient-to-r from-navy-950 via-navy-900 to-navy-950 border border-navy-800 p-6 lg:p-8 text-white shadow-2xl relative overflow-hidden">
-        {/* Background glow decoration */}
-        <div className="absolute -right-20 -top-20 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute right-1/3 -bottom-20 w-60 h-60 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="surface-card p-5 sm:p-6">
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
           <div className="max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/30 text-cyan-300 text-xs font-semibold mb-3">
-              <Zap className="w-3.5 h-3.5 text-cyan-400" />
-              <span>
-                {mode === "MOCK"
-                  ? "Explicit demo mode"
-                  : "Local Detection Service — Connected"}
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[10px] font-semibold ${isBackendReachable ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${isBackendReachable ? "bg-emerald-500" : "bg-rose-500"}`} />
+                {isBackendReachable ? "LOCAL SERVICE CONNECTED" : "API RESPONSE RECEIVED"}
               </span>
-              <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-200">
-                {isDemoData ? "DEMO DATA" : "LIVE"}
+              <span className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-800">
+                {isDemoData ? "DEMO / SYNTHETIC DATA" : "LOCAL RECORDS"}
               </span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-white font-sans">
-              Local Risk Assessment Dashboard
+            <h2 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">
+              Stored activity overview
             </h2>
-            <p className="mt-2 text-sm text-slate-300 leading-relaxed">
-              Local rule-based heuristic analysis of records submitted to this prototype. No NPCI or payment-provider connection is configured; PayShield does not execute or block real payments.
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Local rule-based analysis of records submitted to this prototype. No NPCI or payment-provider connection is configured; PayShield cannot execute or block real payments.
             </p>
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-2 text-xs text-slate-500">
               Last updated: {lastUpdated ? formatDateTime(lastUpdated) : "Not available"}
             </p>
           </div>
 
-          {/* Quick Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={loadDashboardData}
-              className="px-3 py-2.5 rounded-xl bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-700 text-xs font-bold transition flex items-center gap-2"
+              className="inline-flex items-center gap-2 rounded-md border border-outline-soft bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-canvas"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="h-4 w-4" />
               <span>Refresh</span>
             </button>
             <button
               onClick={() => navigate("/analyze")}
-              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 transition flex items-center gap-2 group"
+              className="btn-primary"
             >
-              <Sparkles className="w-4 h-4 text-cyan-300 group-hover:rotate-12 transition" />
-              <span>Analyze Test Transaction</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
+              <Sparkles className="h-4 w-4" />
+              <span>Analyze test transaction</span>
             </button>
-
             <button
               onClick={() => navigate("/collect-requests")}
-              className="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-2"
+              className="inline-flex items-center gap-2 rounded-md border border-outline-soft bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-canvas"
             >
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
-              <span>Collect Warnings</span>
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <span>Collect requests</span>
             </button>
-
             <button
-              onClick={() => navigate("/screenshot-scanner")}
-              className="px-4 py-2.5 rounded-xl bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-700 text-xs font-bold transition flex items-center gap-2"
+              onClick={() => navigate("/url-scanner")}
+              className="inline-flex items-center gap-2 rounded-md border border-outline-soft bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-canvas"
             >
-              <FileScan className="w-4 h-4 text-cyan-400" />
-              <span>Scan Screenshot</span>
+              <FileScan className="h-4 w-4 text-brand-teal" />
+              <span>Scan URL</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* 5 Core Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <StatsCard
-          title="Total Transactions"
+          title="Stored Transactions"
           value={metrics.totalTransactions.toLocaleString("en-IN")}
+          subvalue={`${metrics.assessedTransactions.toLocaleString("en-IN")} assessed by PayShield`}
           icon={Layers}
           variant="default"
         />
@@ -236,19 +225,27 @@ export const Dashboard = () => {
         />
 
         <StatsCard
-          title="Provider-Blocked Payments"
-          value={metrics.blockedTransactions.toLocaleString("en-IN")}
-          subvalue="Requires a verified provider event"
+          title="Internal Stop / Review"
+          value={metrics.stopReviewRecommendations.toLocaleString("en-IN")}
+          subvalue="PayShield recommendations; payments not stopped"
           icon={Ban}
           variant="danger"
         />
 
         <StatsCard
+          title="Verified Provider Blocks"
+          value={metrics.blockedTransactions.toLocaleString("en-IN")}
+          subvalue="Only verified non-simulated provider events"
+          icon={Ban}
+          variant="default"
+        />
+
+        <StatsCard
           title="Fraud Prevented"
           value={metrics.totalFraudPreventedAmount == null ? "Not available" : formatCurrency(metrics.totalFraudPreventedAmount)}
-          subvalue="No verified prevention records"
+          subvalue="No verified prevention events"
           icon={Activity}
-          variant="navy"
+          variant="default"
         />
       </div>
       {metrics.totalTransactions === 0 && (

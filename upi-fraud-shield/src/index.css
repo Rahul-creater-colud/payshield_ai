@@ -3,8 +3,35 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #0b1c30;
+    background: #f8f9ff;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 font-sans;
+    @apply bg-canvas text-ink font-sans;
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid #00685f;
+    outline-offset: 2px;
   }
 }
 
@@ -15,16 +42,89 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #eff4ff;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #c6d3e5;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #8296b0;
+}
+
+.surface-card {
+  background: #fff;
+  border: 1px solid #dfe7f3;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(11, 28, 48, 0.04);
+}
+
+.form-control {
+  width: 100%;
+  border: 1px solid #cbd6e6;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.625rem 0.75rem;
+  color: #0b1c30;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.form-control:focus {
+  border-color: #00685f;
+  box-shadow: 0 0 0 3px rgba(0, 104, 95, 0.12);
+  outline: none;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid #00685f;
+  border-radius: 0.5rem;
+  background: #00685f;
+  padding: 0.625rem 0.875rem;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  border-color: #00564e;
+  background: #00564e;
+}
+
+.btn-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid #cbd6e6;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.625rem 0.875rem;
+  color: #0b1c30;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: #9aabc1;
+  background: #f3f6fa;
+}
+
+.btn-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* Glassmorphism card utility */

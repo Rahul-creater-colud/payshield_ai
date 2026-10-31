@@ -21,6 +21,7 @@ from app.routers import (
     intelligence,
     admin,
     frontend_api,
+    merchant,
 )
 
 
@@ -65,6 +66,7 @@ def create_app() -> FastAPI:
     _app.include_router(intelligence.router)
     _app.include_router(admin.router)
     _app.include_router(frontend_api.router)
+    _app.include_router(merchant.router)
 
     @_app.get("/")
     def root():

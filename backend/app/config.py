@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import List
+from typing import List, Optional
 
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
@@ -23,11 +23,12 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5174",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "*",
     ]
 
     # Model / version
     MODEL_VERSION: str = "0.1.0-rules"
+    ML_MODEL_ENABLED: bool = True
+    ML_MODEL_DIR: Optional[str] = None
 
     # Risk thresholds
     THRESHOLD_LOW_MAX: int = 39
@@ -45,6 +46,13 @@ class Settings(BaseSettings):
 
     # Admin
     ENABLE_ADMIN: bool = True
+    ENABLE_SIMULATED_CALLBACKS: bool = True
+
+    # LLM & AI Explainer
+    GEMINI_API_KEY: Optional[str] = None
+    LLM_API_KEY: Optional[str] = None
+    LLM_MODEL: str = "gemini-1.5-flash"
+    LLM_TIMEOUT_SECONDS: float = 5.0
 
     # Disclaimer
     DISCLAIMER: str = (

@@ -33,6 +33,9 @@ export const TransactionAnalysis = () => {
     senderUpi: "",
     receiverUpi: "",
     amount: "",
+    messageText: "",
+    url: "",
+    unsolicited: false,
     transactionTime: new Date().toISOString().slice(0, 16),
     transactionType: "P2P"
   });
@@ -125,6 +128,7 @@ export const TransactionAnalysis = () => {
       const data = response.data || response;
       setResult({
         ...data,
+        source: response.source,
         data_label: data.data_label || (mode === "MOCK" ? "DEMO DATA" : "DEMO / SYNTHETIC DATA")
       });
 
@@ -149,6 +153,9 @@ export const TransactionAnalysis = () => {
       senderUpi: "",
       receiverUpi: "",
       amount: "",
+      messageText: "",
+      url: "",
+      unsolicited: false,
       transactionTime: new Date().toISOString().slice(0, 16),
       transactionType: "P2P"
     });
@@ -165,7 +172,7 @@ export const TransactionAnalysis = () => {
             Local UPI Transaction Risk Analyzer
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Submit transaction details for local rule-based analysis. No UPI network, NPCI registry, or payment provider is connected.
+            Submit transaction details for local rule-based analysis with an optional experimental ML estimate. No UPI network, NPCI registry, or payment provider is connected.
           </p>
           <p className="mt-1 text-[11px] font-semibold text-amber-700">
             Analysis-only prototype • records and preset scenarios are demo/synthetic data • no payment is executed or blocked
@@ -349,6 +356,56 @@ export const TransactionAnalysis = () => {
               </p>
             </div>
 
+            <section className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Optional scam context
+              </h3>
+              <div className="mt-3 space-y-3">
+                <label className="block text-[11px] font-semibold text-slate-600">
+                  Message or request text
+                  <textarea
+                    name="messageText"
+                    value={formData.messageText || ""}
+                    onChange={handleInputChange}
+                    maxLength={4000}
+                    rows={2}
+                    placeholder="Paste suspicious message text only; never include PINs or OTPs"
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-normal text-slate-800 outline-none focus:border-blue-500"
+                  />
+                </label>
+                <label className="block text-[11px] font-semibold text-slate-600">
+                  Link to scan (static, no visit)
+                  <input
+                    type="url"
+                    name="url"
+                    value={formData.url || ""}
+                    onChange={handleInputChange}
+                    maxLength={2048}
+                    placeholder="https://example.invalid"
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-normal text-slate-800 outline-none focus:border-blue-500"
+                  />
+                </label>
+                <label className="flex items-center gap-2 text-[11px] text-slate-600">
+                  <input
+                    type="checkbox"
+                    name="unsolicited"
+                    checked={Boolean(formData.unsolicited)}
+                    onChange={(event) =>
+                      setFormData((previous) => ({
+                        ...previous,
+                        unsolicited: event.target.checked
+                      }))
+                    }
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  This request was unsolicited
+                </label>
+              </div>
+              <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+                Text and URL checks use local rules and stored indicators only. URLs are not opened or fetched.
+              </p>
+            </section>
+
             {/* Action buttons */}
             <div className="pt-4 flex items-center gap-3">
               <button
@@ -387,8 +444,8 @@ export const TransactionAnalysis = () => {
           {analyzing ? (
             <div className="bg-white rounded-3xl border border-slate-200/90 p-8 shadow-sm">
               <LoadingSpinner
-                message="Local Heuristic Rules Evaluating..."
-                subtext="Checking submitted fields against configured local rules; no external registry or payment service is contacted"
+                message="Local Transaction Assessment..."
+                subtext="Applying local rules and checking optional experimental model availability; no external payment service is contacted"
               />
             </div>
           ) : result ? (
@@ -459,6 +516,48 @@ export const TransactionAnalysis = () => {
                   <span>70 (Critical)</span>
                   <span>100</span>
                 </div>
+              </div>
+
+              <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-slate-800">
+                    Experimental ML estimate
+                  </span>
+                  <span className="rounded-full bg-amber-100 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-amber-800">
+                    Synthetic-trained · supplemental
+                  </span>
+                </div>
+                {result.ml_model?.status === "active" ? (
+                  <>
+                    <p className="mt-2 text-sm font-semibold text-slate-900">
+                      {(result.ml_model.probability * 100).toFixed(1)}% model estimate
+                      <span className="ml-2 text-xs font-medium text-slate-500">
+                        ({result.ml_model.prediction})
+                      </span>
+                    </p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
+                      This experimental Random Forest was trained on generated labels.
+                      It does not change the heuristic risk score or prove fraud.
+                    </p>
+                    <p className="mt-1 text-[10px] text-slate-500">
+                      Model threshold: {(result.ml_model.threshold * 100).toFixed(1)}%
+                    </p>
+                    {result.ml_model.feature_assumptions?.length > 0 && (
+                      <ul className="mt-2 list-disc space-y-1 pl-4 text-[10px] text-slate-500">
+                        {result.ml_model.feature_assumptions.map((assumption) => (
+                          <li key={assumption}>{assumption}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                ) : (
+                  <p className="mt-2 text-xs text-slate-600">
+                    {result.ml_model?.message ||
+                      (result.source === "MOCK_MODE"
+                        ? "Not run for mock-mode transactions."
+                        : "Model estimate unavailable. The heuristic assessment is unchanged.")}
+                  </p>
+                )}
               </div>
 
               {/* Transaction Key Points */}

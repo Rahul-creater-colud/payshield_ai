@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -104,6 +104,18 @@ class RiskContext(BaseModel):
     unsolicited: bool = False
     events: Optional[List[str]] = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_credentials(cls, values):
+        if isinstance(values, dict):
+            bad = set(values) & FORBIDDEN_FIELDS
+            if bad:
+                raise ValueError(
+                    f"Forbidden fields detected: {', '.join(sorted(bad))}. "
+                    "Never send PINs, OTPs, passwords, or card credentials."
+                )
+        return values
+
 
 class RiskAssessRequest(BaseModel):
     sender_id: str
@@ -112,6 +124,16 @@ class RiskAssessRequest(BaseModel):
     request_type: str = Field(default="PAY")
     timestamp: Optional[str] = None
     context: Optional[RiskContext] = None
+
+    @field_validator("timestamp")
+    @classmethod
+    def _validate_timestamp(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None:
+            try:
+                datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise ValueError("timestamp must be a valid ISO 8601 timestamp") from exc
+        return value
 
     @field_validator("request_type")
     @classmethod
@@ -140,6 +162,18 @@ class LayerScores(BaseModel):
     intelligence: int = 0
 
 
+class MLModelAssessment(BaseModel):
+    status: str
+    model_name: str
+    training_data: str
+    affects_final_score: bool = False
+    message: str
+    probability: Optional[float] = Field(None, ge=0, le=1)
+    threshold: Optional[float] = Field(None, ge=0, le=1)
+    prediction: Optional[str] = None
+    feature_assumptions: List[str] = Field(default_factory=list)
+
+
 class RiskAssessResponse(BaseModel):
     assessment_id: str
     transaction_id: str
@@ -152,6 +186,8 @@ class RiskAssessResponse(BaseModel):
     graph_flags: List[GraphFlagItem] = []
     layer_scores: LayerScores
     collect_request_warning: Optional[str] = None
+    llm_explanation: Optional[dict] = None
+    ml_model: Optional[MLModelAssessment] = None
     model_version: str
     simulated: bool = True
     disclaimer: str = DISCLAIMER
@@ -272,6 +308,29 @@ class GrievanceUpdateRequest(BaseModel):
 class GrievanceListResponse(BaseModel):
     items: List[GrievanceResponse]
     total: int
+
+
+class MerchantSessionCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    merchant_id: str = Field(..., min_length=1, max_length=100)
+    expected_amount: float = Field(..., gt=0, le=10_000_000)
+
+
+class SimulatedPaymentCallbackRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    amount: float = Field(..., gt=0, le=10_000_000)
+    status: str = "SUCCESS"
+    reference: Optional[str] = Field(None, max_length=100)
+
+    @field_validator("status")
+    @classmethod
+    def _validate_status(cls, value: str) -> str:
+        normalized = value.upper()
+        if normalized not in {"SUCCESS", "FAILED"}:
+            raise ValueError("status must be SUCCESS or FAILED")
+        return normalized
 
 
 # ---------------------------------------------------------------------------

@@ -22,9 +22,9 @@ from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Query, File, UploadFile, Form
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 
 from app.config import settings
 from app.database import get_db
@@ -34,7 +34,16 @@ from app.engine import behaviour as behaviour_engine
 from app.engine import graph_layer as graph_engine
 from app.engine import playbooks as playbook_engine
 from app.engine import scoring as scoring_engine
-from app.services import url_service, graph_service, intelligence_service, llm_service
+from app.services import (
+    url_service,
+    graph_service,
+    intelligence_service,
+    llm_service,
+)
+from app.services.ml_model_service import (
+    build_transaction_features,
+    ml_model_service,
+)
 from app.services.dashboard_service import get_analytics
 
 router = APIRouter(prefix="/api/v1", tags=["frontend_v1"])
@@ -45,12 +54,48 @@ router = APIRouter(prefix="/api/v1", tags=["frontend_v1"])
 # ---------------------------------------------------------------------------
 
 class AnalyzeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     transaction_id: Optional[str] = None
-    sender_upi: str
-    receiver_upi: str
-    amount: float
+    sender_upi: str = Field(..., min_length=3, max_length=255)
+    receiver_upi: str = Field(..., min_length=3, max_length=255)
+    amount: float = Field(..., gt=0, le=10_000_000)
     transaction_time: Optional[str] = None
     transaction_type: str = "P2P"
+    message_text: Optional[str] = Field(None, max_length=4000)
+    url: Optional[str] = Field(None, max_length=2048)
+    unsolicited: bool = False
+    events: List[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("transaction_type")
+    @classmethod
+    def _validate_transaction_type(cls, value: str) -> str:
+        allowed = {"P2P", "P2M", "COLLECT_REQUEST", "QR_SCAN", "BBPS", "BILL_PAY"}
+        if value not in allowed:
+            raise ValueError(f"transaction_type must be one of {sorted(allowed)}")
+        return value
+
+    @field_validator("transaction_time")
+    @classmethod
+    def _validate_transaction_time(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None:
+            try:
+                datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise ValueError("transaction_time must be a valid ISO 8601 timestamp") from exc
+        return value
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_credentials(cls, values):
+        if isinstance(values, dict):
+            bad = set(values) & {"pin", "otp", "password", "card_number", "cvv", "secret"}
+            if bad:
+                raise ValueError(
+                    f"Forbidden fields detected: {', '.join(sorted(bad))}. "
+                    "Never send PINs, OTPs, passwords, or card credentials."
+                )
+        return values
 
 
 class CollectActionRequest(BaseModel):
@@ -257,6 +302,7 @@ def api_v1_health(db: Session = Depends(get_db)):
         "version": settings.MODEL_VERSION,
         "db": "ok",
         "detection_engine": "rule-based heuristics",
+        "ml_model": ml_model_service.status(),
         "payment_provider_integration": False,
         "data_label": "DEMO / SYNTHETIC DATA",
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -271,6 +317,12 @@ def api_v1_health(db: Session = Depends(get_db)):
 def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db)):
     """Assess and store a submitted record; no payment is executed or blocked."""
     txn_id = req.transaction_id or f"UPI/{datetime.now(timezone.utc).year}/{uuid.uuid4().hex[:9]}"
+    if db.get(models.Transaction, txn_id) is not None:
+        raise AppError(
+            ErrorCode.CONFLICT,
+            f"Transaction reference '{txn_id}' already exists; use a new test/reference ID.",
+            409,
+        )
     ts_str = req.transaction_time or datetime.now(timezone.utc).isoformat()
 
     try:
@@ -285,6 +337,35 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
 
     sender_upi_clean = req.sender_upi.strip().lower()
     receiver_upi_clean = req.receiver_upi.strip().lower()
+    sender_history = (
+        db.query(models.Transaction)
+        .filter(func.lower(func.trim(models.Transaction.sender_id)) == sender_upi_clean)
+        .all()
+    )
+    assessed_at = ts
+    if assessed_at.tzinfo is None:
+        assessed_at = assessed_at.replace(tzinfo=timezone.utc)
+    assessed_at = assessed_at.astimezone(timezone.utc)
+
+    def _transaction_time(value: str) -> Optional[datetime]:
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+
+    model_features, model_assumptions = build_transaction_features(
+        req.amount,
+        ts,
+        sender_history,
+        req.receiver_upi,
+        exclude_transaction_id=txn_id,
+    )
+    ml_assessment = ml_model_service.predict(
+        model_features, model_assumptions
+    )
 
     # Pre-parse name from VPA
     def _vpa_to_name(vpa: str) -> str:
@@ -293,6 +374,26 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
 
     sender_name = _vpa_to_name(req.sender_upi)
     receiver_name = _vpa_to_name(req.receiver_upi)
+    one_hour_ago = assessed_at - timedelta(hours=1)
+    velocity_count = sum(
+        one_hour_ago <= event_time <= assessed_at
+        for event_time in (
+            _transaction_time(transaction.timestamp) for transaction in sender_history
+        )
+        if event_time is not None
+    )
+    day_ago = assessed_at - timedelta(hours=24)
+    receiver_history = (
+        db.query(models.Transaction)
+        .filter(func.lower(func.trim(models.Transaction.receiver_id)) == receiver_upi_clean)
+        .all()
+    )
+    repeated_senders = {
+        transaction.sender_id.strip().lower()
+        for transaction in receiver_history
+        if (event_time := _transaction_time(transaction.timestamp)) is not None
+        and day_ago <= event_time <= assessed_at
+    }
 
     # 1. Heuristic Indicators
     is_night = (hour < 6 or hour >= 23)
@@ -317,7 +418,7 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
     intel_hit = (
         db.query(models.FraudIntelligence)
         .filter(
-            models.FraudIntelligence.indicator_value.ilike(f"%{receiver_upi_clean}%"),
+            func.lower(func.trim(models.FraudIntelligence.indicator_value)) == receiver_upi_clean,
             models.FraudIntelligence.review_status != "RETRACTED",
         )
         .first()
@@ -345,9 +446,53 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
         score = 45
         reasons.append("High transaction value above baseline standard deviation")
     if not reasons:
-        reasons.append("Frequent contact with verified transaction history")
-        reasons.append("Amount within normal standard deviation for sender")
+        reasons.append("No configured rule-based anomaly matched the submitted fields.")
         score = min(score, 18)
+
+    playbook_matches = playbook_engine.match_playbooks({
+        "request_type": req.transaction_type,
+        "message_text": req.message_text,
+        "url": req.url,
+        "unsolicited": req.unsolicited,
+        "events": req.events,
+    })
+    if playbook_matches:
+        score = max(score, min(sum(item.score_contribution for item in playbook_matches), 90))
+        reasons.extend(item.warning for item in playbook_matches)
+
+    if velocity_count > 5:
+        score = max(score, 75)
+        reasons.append(
+            f"High sender velocity: {velocity_count} prior transactions in the hour before assessment."
+        )
+    elif velocity_count > 3:
+        score = max(score, 45)
+        reasons.append(
+            f"Elevated sender velocity: {velocity_count} prior transactions in the hour before assessment."
+        )
+
+    if len(repeated_senders) >= settings.FAN_IN_MIN:
+        score = max(score, 65)
+        reasons.append(
+            f"Repeated entity signal: {len(repeated_senders)} distinct senders paid this receiver in the prior 24 hours."
+        )
+
+    url_scan = None
+    if req.url:
+        url_scan = url_service.scan_url(req.url, db=db)
+        if url_scan["risk_score"] > 0:
+            score = max(score, url_scan["risk_score"])
+            reasons.extend(indicator["text"] for indicator in url_scan["indicators"])
+
+    graph_features = graph_service.get_graph_features(db, req.receiver_upi)
+    if graph_features["fan_in_count"] >= settings.FAN_IN_MIN:
+        score = max(score, 65)
+        reasons.append(
+            f"Graph fan-in signal: {graph_features['fan_in_count']} distinct inbound accounts."
+        )
+    if graph_features["rapid_onward"]:
+        score = max(score, 70)
+        reasons.append("Graph signal: funds were forwarded onward within the configured time window.")
 
     # Categorise
     if score >= 70:
@@ -362,12 +507,15 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
 
     # Specific indicators
     indicators = {
-        "newDevice": is_night or score >= 70,
+        "newDevice": False,
         "unusualTime": is_night,
-        "velocityAlert": is_mule_vpa or (req.amount > 30000),
-        "blacklistedReceiver": bool(intel_hit or is_phish_vpa),
+        "velocityAlert": velocity_count > 3,
+        "blacklistedReceiver": bool(intel_hit),
         "mismatchedVPA": is_brand_spoof or is_phish_vpa,
         "collectRequestAnomaly": is_collect,
+        "repeatedEntity": len(repeated_senders) >= settings.FAN_IN_MIN,
+        "suspiciousUrl": bool(url_scan and url_scan["risk_score"] > 0),
+        "urlRiskScore": url_scan["risk_score"] if url_scan else None,
     }
 
     # Persist record into transactions & risk_assessments for audit trail
@@ -382,6 +530,13 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
             request_type=req.transaction_type,
         )
         db.merge(db_txn)
+        db.add(models.GraphEdge(
+            source_account=req.sender_upi,
+            target_account=req.receiver_upi,
+            amount=req.amount,
+            timestamp=ts_str,
+            transaction_id=txn_id,
+        ))
 
         asm_id = f"ASM_{uuid.uuid4().hex[:8].upper()}"
         db_asm = models.RiskAssessment(
@@ -396,6 +551,19 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
             created_at=datetime.now(timezone.utc).isoformat(),
         )
         db.merge(db_asm)
+        db.merge(models.MLModelResult(
+            assessment_id=asm_id,
+            status=ml_assessment["status"],
+            model_name=ml_assessment["model_name"],
+            training_data=ml_assessment["training_data"],
+            affects_final_score=ml_assessment["affects_final_score"],
+            message=ml_assessment["message"],
+            probability=ml_assessment["probability"],
+            threshold=ml_assessment["threshold"],
+            prediction=ml_assessment["prediction"],
+            feature_assumptions=ml_assessment["feature_assumptions"],
+            calculated_at=datetime.now(timezone.utc).isoformat(),
+        ))
         db.commit()
     except Exception as exc:
         db.rollback()
@@ -424,6 +592,12 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
             ),
             "reasons": reasons,
             "indicators": indicators,
+            "ml_model": ml_assessment,
+            "playbook_matches": [
+                {"playbook_id": item.playbook_id, "name": item.name}
+                for item in playbook_matches
+            ],
+            "url_scan": url_scan,
             "simulated": True,
             "data_label": "DEMO / SYNTHETIC DATA",
             "payment_executed": False,
@@ -610,7 +784,11 @@ def api_v1_get_transaction_detail(txn_id: str, db: Session = Depends(get_db)):
     }
 
 
-def _transaction_response(tx: models.Transaction, assessment: Optional[models.RiskAssessment]) -> Dict[str, Any]:
+def _transaction_response(
+    tx: models.Transaction,
+    assessment: Optional[models.RiskAssessment],
+    ml_result: Optional[models.MLModelResult] = None,
+) -> Dict[str, Any]:
     def _name(value: str) -> str:
         return value.split("@")[0].replace(".", " ").replace("-", " ").replace("_", " ").title()
 
@@ -647,6 +825,21 @@ def _transaction_response(tx: models.Transaction, assessment: Optional[models.Ri
         "riskCategory": category,
         "recommendedAction": assessment.recommended_action if assessment else None,
         "assessmentId": assessment.assessment_id if assessment else None,
+        "ml_model": (
+            {
+                "status": ml_result.status,
+                "model_name": ml_result.model_name,
+                "training_data": ml_result.training_data,
+                "affects_final_score": ml_result.affects_final_score,
+                "message": ml_result.message,
+                "probability": ml_result.probability,
+                "threshold": ml_result.threshold,
+                "prediction": ml_result.prediction,
+                "feature_assumptions": ml_result.feature_assumptions or [],
+            }
+            if ml_result
+            else None
+        ),
         "reasons": reasons,
         "simulated": True,
         "data_label": "DEMO / SYNTHETIC DATA",
@@ -674,6 +867,15 @@ def api_v1_get_stored_transactions(
     latest = {}
     for assessment in assessments:
         latest.setdefault(assessment.transaction_id, assessment)
+    assessment_ids = [assessment.assessment_id for assessment in latest.values()]
+    stored_ml_results = (
+        db.query(models.MLModelResult)
+        .filter(models.MLModelResult.assessment_id.in_(assessment_ids))
+        .all()
+        if assessment_ids
+        else []
+    )
+    ml_by_assessment = {item.assessment_id: item for item in stored_ml_results}
 
     requested_status = status.upper()
     if requested_status == "SUSPICIOUS":
@@ -681,7 +883,12 @@ def api_v1_get_stored_transactions(
     query = (search or "").strip().lower()
     results = []
     for tx in transactions:
-        item = _transaction_response(tx, latest.get(tx.transaction_id))
+        assessment = latest.get(tx.transaction_id)
+        item = _transaction_response(
+            tx,
+            assessment,
+            ml_by_assessment.get(assessment.assessment_id) if assessment else None,
+        )
         if requested_status != "ALL" and item["status"] != requested_status:
             continue
         if query and not any(
@@ -712,9 +919,14 @@ def api_v1_get_stored_transaction_detail(txn_id: str, db: Session = Depends(get_
         .order_by(desc(models.RiskAssessment.created_at), desc(models.RiskAssessment.assessment_id))
         .first()
     )
+    ml_result = (
+        db.get(models.MLModelResult, assessment.assessment_id)
+        if assessment
+        else None
+    )
     return {
         "success": True,
-        "data": _transaction_response(tx, assessment),
+        "data": _transaction_response(tx, assessment, ml_result),
     }
 
 

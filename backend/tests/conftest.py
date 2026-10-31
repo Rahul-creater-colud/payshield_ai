@@ -36,8 +36,11 @@ def setup_test_db():
     Base.metadata.drop_all(bind=_engine)
     Base.metadata.create_all(bind=_engine)
     db = _TestingSessionLocal()
+    seed_file = os.path.join(os.path.dirname(__file__), "..", "app", "data", "seed.json")
+    if not os.path.exists(seed_file):
+        seed_file = "app/data/seed.json"
     try:
-        load_seed(db=db, seed_path="app/data/seed.json")
+        load_seed(db=db, seed_path=seed_file)
     finally:
         db.close()
     yield

@@ -12,6 +12,8 @@ def test_health_root(client):
     assert body["db"] == "ok"
     assert "time" in body
     assert "version" in body
+    assert body["ml_model"]["status"] in {"active", "disabled", "unavailable"}
+    assert body["ml_model"]["affects_final_score"] is False
 
 
 def test_health_api(client):

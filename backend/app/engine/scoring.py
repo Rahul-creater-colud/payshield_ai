@@ -17,17 +17,16 @@ from app.config import settings
 
 
 def ml_adjustment(ctx: Dict[str, Any]) -> Optional[int]:
-    """ML model score adjustment hook.
+    """Keep experimental ML output separate from the heuristic risk score.
 
-    Returns None by default (no adjustment). The ML teammate can replace
-    this with a trained model that returns an integer adjustment to the
-    combined score (-50 to +50 recommended range).
+    The current model is trained on generated labels and is not validated
+    for use in the final risk decision.
 
     Args:
         ctx: Full RiskContext dict.
 
     Returns:
-        Integer adjustment or None if no ML model is active.
+        None until a validated model is approved to affect final decisions.
     """
     return None
 

@@ -25,11 +25,13 @@ import {
   BarChart2,
   AlertTriangle,
   ShieldCheck,
+  ShieldAlert,
   Zap,
   Download,
   RefreshCw
 } from "lucide-react";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { DataNotice, MetricCard } from "../components/PagePrimitives";
 import { apiService } from "../services/apiService";
 import { useApiMode } from "../hooks/useApiMode";
 import { useToast } from "../hooks/useToast";
@@ -121,21 +123,24 @@ export const FraudAnalytics = () => {
     color: item.color
   }));
   const totalStopReview = dailyActivity.reduce((sum, item) => sum + item.stopReviewVolume, 0);
+  const highScoreAssessments = riskDistribution
+    .filter((item) => item.range.startsWith("81"))
+    .reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto animate-fade-in">
+    <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       {/* Header and Filter Control Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm">
         <div>
           <h2 className="text-xl lg:text-2xl font-bold text-slate-900 tracking-tight">
-            Fraud Analytics & Threat Vectors
+            Fraud Analytics & Model Status
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Counts and charts are derived from locally stored transaction records and heuristic assessments.
+            Synthetic telemetry, entity tracking, and model evaluation from the local prototype.
           </p>
           <p className="mt-1 text-[11px] font-semibold text-amber-700">
             {mode === "MOCK" ? "DEMO DATA — explicit mock mode" : analyticsData.data_label || "Local dataset"}
-            {" • "}Rule-based heuristics; no validated accuracy or payment-provider connection
+            {" • "}Rule-based heuristics; no validated ML benchmark or payment-provider connection
           </p>
           {analyticsData.updated_at && (
             <p className="mt-1 text-[11px] text-slate-400">
@@ -185,10 +190,23 @@ export const FraudAnalytics = () => {
             className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Export CSV/JSON</span>
+            <span>Export JSON</span>
           </button>
         </div>
       </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <MetricCard label="Transactions in local store" value={(metrics.totalTransactions || 0).toLocaleString("en-IN")} detail="Stored prototype records" icon={Layers} />
+        <MetricCard label="Suspicious records" value={(metrics.suspiciousTransactions || 0).toLocaleString("en-IN")} detail="Medium/high heuristic classifications" icon={AlertTriangle} tone="amber" />
+        <MetricCard label="High-score assessments" value={highScoreAssessments.toLocaleString("en-IN")} detail="Scores 81–100 in selected period" icon={ShieldAlert} tone="red" />
+        <MetricCard label="Repeated suspicious entities" value="Not available" detail="No aggregate entity-frequency endpoint is configured" icon={PieIcon} tone="slate" />
+        <MetricCard label="Fraud prevented" value="Not available" detail="No verified prevention events support this claim" icon={ShieldCheck} tone="slate" />
+        <MetricCard label="Model evaluation" value="Not available" detail="No validated labeled benchmark is configured" icon={Zap} tone="slate" />
+      </div>
+
+      <DataNotice tone="warning">
+        These visualizations summarize locally stored synthetic records and rule-based scores. They are not real-time UPI telemetry, validated model performance, or confirmed fraud categories.
+      </DataNotice>
 
       {/* Row 1: Daily Fraud Detection & Transaction Volume (Dual Graphs) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

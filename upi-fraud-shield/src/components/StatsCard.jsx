@@ -8,45 +8,43 @@ export const StatsCard = ({
   change,
   isPositive,
   icon: Icon,
-  variant = "default", // "default", "success", "warning", "danger", "navy"
+  variant = "default",
   onClick
 }) => {
   const variantStyles = {
-    default: "border-slate-200/80 bg-white text-slate-800 hover:border-blue-400",
-    navy: "border-navy-800 bg-gradient-to-br from-navy-900 to-navy-950 text-white hover:border-blue-500/50 shadow-xl",
-    success: "border-emerald-500/30 bg-emerald-50/40 text-slate-900 hover:border-emerald-500",
-    warning: "border-amber-500/30 bg-amber-50/40 text-slate-900 hover:border-amber-500",
-    danger: "border-rose-500/30 bg-rose-50/40 text-slate-900 hover:border-rose-500"
+    default: "border-outline-soft bg-white text-slate-800 hover:border-blue-400",
+    navy: "border-outline-soft bg-white text-slate-800 hover:border-blue-400",
+    success: "border-emerald-200 bg-white text-slate-900 hover:border-emerald-400",
+    warning: "border-amber-200 bg-white text-slate-900 hover:border-amber-400",
+    danger: "border-rose-200 bg-white text-slate-900 hover:border-rose-400"
   };
 
   const iconBgStyles = {
-    default: "bg-blue-50 text-blue-600 border-blue-100",
-    navy: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-    success: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-    warning: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-    danger: "bg-rose-500/10 text-rose-600 border-rose-500/20"
+    default: "bg-teal-50 text-brand-teal border-teal-100",
+    navy: "bg-teal-50 text-brand-teal border-teal-100",
+    success: "bg-emerald-50 text-emerald-700 border-emerald-100",
+    warning: "bg-amber-50 text-amber-700 border-amber-100",
+    danger: "bg-rose-50 text-rose-700 border-rose-100"
   };
-
-  const isDark = variant === "navy";
 
   return (
     <div
       onClick={onClick}
-      className={`relative overflow-hidden rounded-2xl border p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${
+      className={`relative overflow-hidden rounded-xl border p-4 transition-shadow duration-200 hover:shadow-fintech ${
         variantStyles[variant]
       } ${onClick ? "cursor-pointer" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium text-slate-500">
             {title}
           </p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <h3 className={`text-2xl font-bold tracking-tight font-sans ${isDark ? "text-white" : "text-slate-900"}`}>
+          <div className="mt-2 flex flex-wrap items-baseline gap-2">
+            <h3 className="break-words text-xl font-semibold tracking-tight font-sans text-ink">
               {value}
             </h3>
             {subvalue && (
-              <span className={`text-xs font-normal ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <span className="text-[10px] font-normal text-slate-500">
                 {subvalue}
               </span>
             )}
@@ -54,8 +52,8 @@ export const StatsCard = ({
         </div>
 
         {Icon && (
-          <div className={`p-3 rounded-xl border ${iconBgStyles[variant]}`}>
-            <Icon className="w-5 h-5" />
+          <div className={`rounded-md border p-2 ${iconBgStyles[variant]}`}>
+            <Icon className="h-4 w-4" />
           </div>
         )}
       </div>
@@ -72,7 +70,7 @@ export const StatsCard = ({
             {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
             {change}
           </span>
-          <span className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+          <span className="text-[11px] text-slate-500">
             vs prior 24h window
           </span>
         </div>

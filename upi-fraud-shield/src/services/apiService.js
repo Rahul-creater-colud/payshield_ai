@@ -11,6 +11,12 @@ export const setStoredApiMode = (mode) => {
   localStorage.setItem("UPI_SHIELD_API_MODE", mode);
 };
 
+const requireLiveMode = (mode) => {
+  if (mode !== "LIVE") {
+    throw new Error("Switch to LOCAL API mode to access persisted backend records.");
+  }
+};
+
 export const apiService = {
   async pingBackend() {
     try {
@@ -28,8 +34,13 @@ export const apiService = {
         sender_upi: formData.senderUpi,
         receiver_upi: formData.receiverUpi,
         amount: parseFloat(formData.amount),
-        transaction_time: formData.transactionTime || new Date().toISOString(),
-        transaction_type: formData.transactionType
+        transaction_time: formData.transactionTime
+          ? new Date(formData.transactionTime).toISOString()
+          : new Date().toISOString(),
+        transaction_type: formData.transactionType,
+        message_text: formData.messageText || null,
+        url: formData.url || null,
+        unsolicited: Boolean(formData.unsolicited)
       });
       return { source: "LIVE_API", data: response.data || response };
     }
@@ -120,5 +131,80 @@ export const apiService = {
     }
     const result = await mockDataService.resolveAlert(id, notes);
     return { source: "MOCK_MODE", ...result };
+  },
+
+  async getCatalog(mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return { source: "LIVE_API", data: await apiClient.get(ENDPOINTS.CATALOG) };
+  },
+
+  async getAccountNetwork(accountId, depth = 2, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    const data = await apiClient.get(ENDPOINTS.ACCOUNT_NETWORK(accountId), { params: { depth } });
+    return { source: "LIVE_API", data };
+  },
+
+  async getIntelligence(params = {}, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return { source: "LIVE_API", data: await apiClient.get(ENDPOINTS.INTELLIGENCE, { params }) };
+  },
+
+  async reportIntelligence(payload, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return { source: "LIVE_API", data: await apiClient.post(ENDPOINTS.REPORT_INTELLIGENCE, payload) };
+  },
+
+  async updateIntelligence(id, payload, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return { source: "LIVE_API", data: await apiClient.patch(`${ENDPOINTS.INTELLIGENCE}/${encodeURIComponent(id)}`, payload) };
+  },
+
+  async getGrievances(params = {}, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return { source: "LIVE_API", data: await apiClient.get(ENDPOINTS.GRIEVANCES, { params }) };
+  },
+
+  async createGrievance(payload, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return { source: "LIVE_API", data: await apiClient.post(ENDPOINTS.GRIEVANCES, payload) };
+  },
+
+  async updateGrievance(id, payload, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return { source: "LIVE_API", data: await apiClient.patch(ENDPOINTS.GRIEVANCE(id), payload) };
+  },
+
+  async getRiskAssessments(params = {}, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return { source: "LIVE_API", data: await apiClient.get(ENDPOINTS.RISK_ASSESSMENTS, { params }) };
+  },
+
+  async scanUrl(url, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return { source: "LIVE_API", data: await apiClient.post(ENDPOINTS.URL_SCAN, { url }) };
+  },
+
+  async createMerchantSession(payload, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return {
+      source: "LIVE_API",
+      data: await apiClient.post(ENDPOINTS.MERCHANT_SESSIONS, payload)
+    };
+  },
+
+  async simulatePaymentCallback(sessionId, payload, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return {
+      source: "LIVE_API",
+      data: await apiClient.post(ENDPOINTS.SIMULATE_PAYMENT_CALLBACK(sessionId), payload)
+    };
+  },
+
+  async getMerchantLedger(sessionId, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return {
+      source: "LIVE_API",
+      data: await apiClient.get(ENDPOINTS.MERCHANT_LEDGER(sessionId))
+    };
   }
 };

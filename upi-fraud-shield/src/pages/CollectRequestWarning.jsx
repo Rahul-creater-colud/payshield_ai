@@ -18,6 +18,7 @@ import RiskBadge from "../components/RiskBadge";
 import ConfirmationModal from "../components/ConfirmationModal";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
+import { ErrorPanel } from "../components/PagePrimitives";
 import { apiService } from "../services/apiService";
 import { useApiMode } from "../hooks/useApiMode";
 import { useToast } from "../hooks/useToast";
@@ -28,7 +29,10 @@ export const CollectRequestWarning = () => {
   const toast = useToast();
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [requests, setRequests] = useState([]);
+  const [requestsAvailable, setRequestsAvailable] = useState(false);
+  const [dataLabel, setDataLabel] = useState("");
   const [activeModal, setActiveModal] = useState(null); // { type: 'ACCEPT' | 'REJECT', request: item }
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmStep, setConfirmStep] = useState(1);
@@ -39,12 +43,19 @@ export const CollectRequestWarning = () => {
 
   const loadCollectRequests = async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await apiService.getCollectRequests(mode);
-      setRequests(res.data || []);
+      if (!Array.isArray(res.data)) {
+        throw new Error("The backend returned an invalid collect-request response.");
+      }
+      setRequests(res.data);
+      setRequestsAvailable(res.available !== false);
+      setDataLabel(res.data_label || "");
     } catch (err) {
-      console.error("Error loading collect requests:", err);
-      toast.error("Failed to load collect requests", "Network Error");
+      setRequests([]);
+      setRequestsAvailable(false);
+      setError(err.message || "Failed to load collect requests.");
     } finally {
       setLoading(false);
     }
@@ -119,7 +130,7 @@ export const CollectRequestWarning = () => {
             Suspicious Collect Request Interception Shield
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Review incoming UPI debit pull requests analyzed by our threat intelligence heuristic engine.
+            No live UPI provider feed is connected. Only requests actually supplied by an authorized integration can be reviewed here.
           </p>
         </div>
 
@@ -131,17 +142,23 @@ export const CollectRequestWarning = () => {
             {requests.filter((r) => r.riskCategory === "MEDIUM" && r.status === "PENDING").length} Medium Risk
           </span>
           <span className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
-            {requests.filter((r) => r.riskCategory === "LOW" && r.status === "PENDING").length} Verified
+            {requests.filter((r) => r.riskCategory === "LOW" && r.status === "PENDING").length} Low Risk
           </span>
         </div>
       </div>
 
       {/* Requests List */}
-      {requests.length === 0 ? (
+      {error ? (
+        <ErrorPanel
+          title={mode === "MOCK" ? "Demo requests unavailable" : "Collect requests unavailable"}
+          error={error}
+          onRetry={loadCollectRequests}
+        />
+      ) : requests.length === 0 ? (
         <EmptyState
           icon={ShieldCheck}
-          title="Live Collect Requests Unavailable"
-          description="No authorized payment-provider feed is configured, so PayShield cannot inspect or act on live collect requests."
+          title={requestsAvailable ? "No collect requests available" : mode === "MOCK" ? "No demo requests available" : "Live Collect Requests Unavailable"}
+          description={dataLabel || "No authorized payment-provider feed is configured, so PayShield cannot inspect or act on live collect requests."}
         />
       ) : (
         <div className="space-y-4">

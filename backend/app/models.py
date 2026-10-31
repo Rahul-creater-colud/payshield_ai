@@ -143,6 +143,27 @@ class PaymentEvent(Base):
     verified_at = Column(String, nullable=True)
 
 
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+
+    event_id = Column(String, primary_key=True)
+    entity_type = Column(String, nullable=False)
+    entity_id = Column(String, nullable=False)
+    action = Column(String, nullable=False)
+    details = Column(JSON, nullable=False, default=dict)
+    created_at = Column(String, nullable=False)
+
+
+class GrievanceAppeal(Base):
+    __tablename__ = "grievance_appeals"
+
+    appeal_id = Column(String, primary_key=True)
+    case_id = Column(String, ForeignKey("grievances.case_id"), nullable=False)
+    reason = Column(Text, nullable=False)
+    status = Column(String, nullable=False, default="SUBMITTED")
+    created_at = Column(String, nullable=False)
+
+
 class Grievance(Base):
     __tablename__ = "grievances"
 

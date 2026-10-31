@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -110,6 +110,7 @@ class RiskAssessRequest(BaseModel):
     receiver_id: str
     amount: float = Field(..., gt=0, le=10_000_000)
     request_type: str = Field(default="PAY")
+    language: Literal["en", "hi"] = "en"
     timestamp: Optional[str] = None
     context: Optional[RiskContext] = None
 
@@ -281,6 +282,19 @@ class GrievanceUpdateRequest(BaseModel):
         if v not in allowed:
             raise ValueError(f"status must be one of {allowed}")
         return v
+
+
+class GrievanceAppealRequest(BaseModel):
+    reason: str = Field(..., min_length=10, max_length=2000)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_forbidden(cls, values):
+        if isinstance(values, dict):
+            bad = set(values.keys()) & FORBIDDEN_FIELDS
+            if bad:
+                raise ValueError(f"Forbidden fields: {', '.join(sorted(bad))}")
+        return values
 
 
 class GrievanceListResponse(BaseModel):

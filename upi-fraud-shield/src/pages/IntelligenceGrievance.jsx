@@ -14,6 +14,7 @@ export default function IntelligenceGrievance() {
   const { mode } = useApiMode();
   const [indicators, setIndicators] = useState([]);
   const [grievances, setGrievances] = useState([]);
+  const [appeals, setAppeals] = useState({});
   const [assessments, setAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -46,11 +47,24 @@ export default function IntelligenceGrievance() {
       setIndicators(indicatorItems);
       setGrievances(grievanceItems);
       setAssessments(assessmentItems);
+      const terminalGrievances = grievanceItems.filter((item) =>
+        ["RESOLVED", "REJECTED"].includes(item.status)
+      );
+      const appealResponses = await Promise.all(
+        terminalGrievances.map(async (item) => ({
+          caseId: item.case_id,
+          response: await apiService.getGrievanceAppeals(item.case_id, mode)
+        }))
+      );
+      setAppeals(Object.fromEntries(
+        appealResponses.map(({ caseId, response }) => [caseId, response.data?.items || []])
+      ));
       setLastUpdated(new Date());
     } catch (requestError) {
       setIndicators([]);
       setGrievances([]);
       setAssessments([]);
+      setAppeals({});
       setError(requestError.message || "Could not load intelligence and grievance records.");
     } finally {
       setLoading(false);
@@ -136,6 +150,33 @@ export default function IntelligenceGrievance() {
       await loadData();
     } catch (requestError) {
       setActionError(requestError.message || "Could not update the grievance.");
+    } finally {
+      setBusyAction("");
+    }
+  };
+
+  const submitAppeal = async (event, grievance) => {
+    event.preventDefault();
+    setActionError("");
+    setBusyAction(`appeal-${grievance.case_id}`);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    try {
+      const response = await apiService.submitGrievanceAppeal(
+        grievance.case_id,
+        { reason: String(form.get("reason")).trim() },
+        mode
+      );
+      setAppeals((current) => ({
+        ...current,
+        [grievance.case_id]: [
+          ...(current[grievance.case_id] || []),
+          response.data
+        ]
+      }));
+      formElement.reset();
+    } catch (requestError) {
+      setActionError(requestError.message || "Could not submit the local appeal.");
     } finally {
       setBusyAction("");
     }
@@ -347,6 +388,26 @@ export default function IntelligenceGrievance() {
                         {busyAction === grievance.case_id ? "Saving..." : "Update"}
                       </button>
                     </form>
+                  )}
+                  {isTerminal && (
+                    <div className="space-y-3 rounded-md border border-outline-soft bg-canvas/60 p-3">
+                      <p className="text-[11px] font-semibold text-slate-700">Local appeals</p>
+                      {(appeals[grievance.case_id] || []).map((appeal) => (
+                        <div key={appeal.appeal_id} className="rounded border border-outline-soft bg-white p-2 text-[11px]">
+                          <p className="font-mono text-slate-500">{appeal.appeal_id} · {appeal.status}</p>
+                          <p className="mt-1 text-slate-700">{appeal.reason}</p>
+                        </div>
+                      ))}
+                      <form onSubmit={(event) => submitAppeal(event, grievance)} className="space-y-2">
+                        <label className="block text-[11px] font-medium text-slate-600">
+                          Appeal reason
+                          <textarea className="form-control mt-1 min-h-16" name="reason" minLength="10" maxLength="2000" required />
+                        </label>
+                        <button type="submit" className="rounded-md border border-outline-soft bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-canvas" disabled={busyAction === `appeal-${grievance.case_id}`}>
+                          {busyAction === `appeal-${grievance.case_id}` ? "Submitting..." : "Submit local appeal"}
+                        </button>
+                      </form>
+                    </div>
                   )}
                   {grievance.disclaimer && <p className="text-[10px] text-amber-800">{grievance.disclaimer}</p>}
                 </article>

@@ -17,6 +17,10 @@ export const ENDPOINTS = {
   REPORT_INTELLIGENCE: "/api/intelligence/report",
   GRIEVANCES: "/api/grievances",
   GRIEVANCE: (caseId) => `/api/grievances/${encodeURIComponent(caseId)}`,
+  GRIEVANCE_APPEALS: (caseId) => `/api/grievances/${encodeURIComponent(caseId)}/appeals`,
   RISK_ASSESSMENTS: "/api/risk/assessments",
-  URL_SCAN: "/api/urls/scan"
+  URL_SCAN: "/api/urls/scan",
+  MERCHANT_SESSIONS: "/api/merchant/sessions",
+  MERCHANT_TRANSACTION: (reference) => `/api/merchant/transactions/${encodeURIComponent(reference)}`,
+  SIMULATE_PAYMENT_CALLBACK: "/api/payments/simulate-callback"
 };

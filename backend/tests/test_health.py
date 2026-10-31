@@ -22,3 +22,29 @@ def test_health_api(client):
     body = r.json()
     assert body["status"] == "ok"
     assert body["db"] == "ok"
+
+
+def test_frontend_development_origin_is_allowed(client):
+    response = client.options(
+        "/api/v1/health",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type,x-client-platform,x-request-time",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert response.headers["access-control-allow-credentials"] == "true"
+
+
+def test_unconfigured_origin_is_not_allowed(client):
+    response = client.options(
+        "/api/v1/health",
+        headers={
+            "Origin": "https://untrusted.example",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert response.status_code == 400
+    assert "access-control-allow-origin" not in response.headers

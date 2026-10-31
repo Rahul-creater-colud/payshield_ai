@@ -19,7 +19,7 @@ import os
 import re
 import uuid
 from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, Query, File, UploadFile, Form
 from pydantic import BaseModel, Field
@@ -55,11 +55,12 @@ router = APIRouter(prefix="/api/v1", tags=["frontend_v1"])
 
 class AnalyzeRequest(BaseModel):
     transaction_id: Optional[str] = None
-    sender_upi: str
-    receiver_upi: str
-    amount: float
+    sender_upi: str = Field(..., min_length=3, max_length=255)
+    receiver_upi: str = Field(..., min_length=3, max_length=255)
+    amount: float = Field(..., gt=0, le=1_000_000, allow_inf_nan=False)
     transaction_time: Optional[str] = None
-    transaction_type: str = "P2P"
+    transaction_type: Literal["P2P", "P2M", "QR_SCAN", "BBPS", "COLLECT_REQUEST"] = "P2P"
+    language: Literal["en", "hi"] = "en"
 
 
 class CollectActionRequest(BaseModel):
@@ -385,6 +386,21 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
         category = "LOW"
         status = "SAFE"
 
+    safety_explanation = llm_service.generate_explanation(
+        transaction_data={
+            "sender_upi": req.sender_upi,
+            "receiver_upi": req.receiver_upi,
+            "amount": req.amount,
+            "transaction_type": req.transaction_type,
+        },
+        risk_assessment={
+            "score": score,
+            "category": category,
+            "reasons": reasons,
+        },
+        language=req.language,
+    )
+
     # Specific indicators
     indicators = {
         "newDevice": is_night or score >= 70,
@@ -448,6 +464,7 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
                 "CAUTION_VERIFY" if category == "MEDIUM" else "PROCEED"
             ),
             "reasons": reasons,
+            "safety_explanation": safety_explanation,
             "indicators": indicators,
             "ml_model": ml_assessment,
             "simulated": True,
@@ -858,10 +875,10 @@ async def api_v1_screenshot_ocr(
     sample_key: Optional[str] = Form(None),
 ):
     """Return a labeled sample only; uploaded-image OCR is not implemented."""
-    if sample_key != "scan-sample-2":
+    if sample_key not in {"scan-sample-1", "scan-sample-2", "scan-sample-3"}:
         raise AppError(
             ErrorCode.BAD_REQUEST,
-            "Image OCR is unavailable. Only the explicitly labeled demo sample is supported.",
+            "Image OCR is unavailable. Select one of the explicitly labeled demo samples instead.",
             status_code=501,
         )
 
@@ -900,6 +917,50 @@ async def api_v1_screenshot_ocr(
                     },
                 ],
                 "safetyAction": "Do NOT transfer funds or call the number provided. Verify bill status strictly via official state electricity DISCOM portal.",
+            },
+        }
+
+    if sample_key == "scan-sample-3":
+        return {
+            "success": True,
+            "data_label": "DEMO DATA — sample response, image not analyzed",
+            "simulated": True,
+            "data": {
+                "id": "scan-sample-3",
+                "filename": "dmart_store_receipt_safe.jpg",
+                "verdict": "LOW-RISK DEMO SAMPLE (NOT VERIFIED)",
+                "riskScore": 6,
+                "riskCategory": "LOW",
+                "summary": (
+                    "Synthetic receipt example only. No GSTIN, VPA, or payment-provider "
+                    "verification was performed."
+                ),
+                "ocrExtractedText": (
+                    "DMART AVENUE SUPERMARTS LTD. GSTIN: 27AABCA1234F1Z9. "
+                    "Txn ID: DMART-MUM-89214. Total Amount: ₹1,842.50. "
+                    "Paid via UPI: dmart.store01@hdfcbank."
+                ),
+                "extractedEntities": {
+                    "suspiciousUpiIds": [],
+                    "flaggedKeywords": [],
+                    "detectedAmount": "₹1,842.50",
+                    "claimedSender": "D-Mart Avenue Supermarts Ltd (unverified sample claim)",
+                    "qrCodePresent": False,
+                    "qrPayload": None,
+                },
+                "forensicFindings": [
+                    {
+                        "rule": "OCR-06: Synthetic receipt example",
+                        "severity": "LOW",
+                        "detail": (
+                            "This sample does not query or validate GST or banking registries."
+                        ),
+                    }
+                ],
+                "safetyAction": (
+                    "Sample is not verified. Check transaction status directly with your "
+                    "payment provider."
+                ),
             },
         }
 

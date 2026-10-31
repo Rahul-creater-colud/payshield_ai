@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.errors import AppError, ErrorCode
 from app.models import FraudIntelligence, AccountOrVPA
+from app.services.audit_service import record_audit_event
 
 
 def list_intelligence(
@@ -69,6 +70,13 @@ def report_intelligence(
         reviewed_at=None,
     )
     db.add(ind)
+    record_audit_event(
+        db,
+        entity_type="intelligence_indicator",
+        entity_id=ind_id,
+        action="reported",
+        details={"indicator_type": indicator_type, "review_status": "UNREVIEWED"},
+    )
     db.commit()
     db.refresh(ind)
     return ind
@@ -83,6 +91,13 @@ def update_intelligence(
     now = datetime.now(timezone.utc).isoformat()
     ind.review_status = review_status
     ind.reviewed_at = now
+    record_audit_event(
+        db,
+        entity_type="intelligence_indicator",
+        entity_id=indicator_id,
+        action="review_status_updated",
+        details={"review_status": review_status},
+    )
     db.commit()
     db.refresh(ind)
     return ind

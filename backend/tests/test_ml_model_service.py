@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
+import joblib
+
 from app.config import settings
 from app.services.ml_model_service import (
     FEATURE_NAMES,
@@ -90,6 +92,55 @@ def test_missing_artifacts_report_unavailable(monkeypatch, tmp_path):
 
     assert result["status"] == "unavailable"
     assert "artifacts are missing" in result["message"]
+
+
+def test_loads_packaged_pipeline_artifacts_and_provenance(monkeypatch, tmp_path):
+    artifact_directory = tmp_path / "artifacts"
+    artifact_directory.mkdir()
+    joblib.dump(
+        {
+            "pipeline": FakeModel(),
+            "model_name": "balanced_random_forest",
+            "feature_names": list(FEATURE_NAMES),
+            "training_data": "Synthetic labels; not real payment outcomes",
+        },
+        artifact_directory / "best_model.joblib",
+    )
+    joblib.dump(0.4, artifact_directory / "best_threshold.joblib")
+    monkeypatch.setattr(settings, "ML_MODEL_ENABLED", True)
+    monkeypatch.setattr(settings, "ML_MODEL_DIR", str(tmp_path))
+
+    service = ExperimentalMLModelService()
+    status = service.status()
+    result = service.predict({name: 1 for name in FEATURE_NAMES})
+
+    assert status["status"] == "active"
+    assert status["model_name"] == "balanced_random_forest"
+    assert status["training_data"] == "Synthetic labels; not real payment outcomes"
+    assert result["threshold"] == 0.4
+    assert result["probability"] == 0.75
+
+
+def test_project_model_artifact_loads_and_predicts(monkeypatch):
+    monkeypatch.setattr(settings, "ML_MODEL_ENABLED", True)
+    monkeypatch.setattr(settings, "ML_MODEL_DIR", None)
+    service = ExperimentalMLModelService()
+
+    result = service.predict({
+        "transaction_amount": 4200.0,
+        "transaction_hour": 2,
+        "transaction_count_24h": 8,
+        "is_new_receiver": 1,
+        "failed_attempts": 0,
+        "avg_transaction_amount": 350.0,
+        "amount_deviation": 11.0,
+    })
+
+    assert result["status"] == "active"
+    assert result["model_name"] == "balanced_random_forest"
+    assert "synthetic labels" in result["training_data"].lower()
+    assert 0 <= result["probability"] <= 1
+    assert 0 <= result["threshold"] <= 1
 
 
 def test_analyze_endpoint_returns_supplemental_model_estimate(client, monkeypatch):

@@ -2,6 +2,7 @@ import React from "react";
 import { Server, ToggleLeft, ToggleRight, RefreshCw, AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
 import { useApiMode } from "../hooks/useApiMode";
 import { useToast } from "../hooks/useToast";
+import { API_BASE_URL } from "../api/axiosClient";
 
 export const ApiStatusBanner = () => {
   const {
@@ -75,7 +76,7 @@ export const ApiStatusBanner = () => {
             {isLiveMode ? (
               isBackendReachable ? (
                 <span className="text-emerald-400 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 inline" /> LOCAL BACKEND CONNECTED (FastAPI @ http://localhost:8000)
+                  <CheckCircle2 className="w-3.5 h-3.5 inline" /> LOCAL BACKEND CONNECTED (FastAPI @ {API_BASE_URL})
                 </span>
               ) : (
                 <span className="text-rose-400 flex items-center gap-1.5">

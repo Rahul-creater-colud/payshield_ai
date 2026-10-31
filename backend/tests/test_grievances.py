@@ -233,3 +233,63 @@ def test_patch_cannot_set_submitted(client):
         "reviewer_note": "Try to reset",
     })
     assert r.status_code == 422  # validator rejects it
+
+
+def test_appeal_requires_terminal_grievance_and_persists(client):
+    assessment_id = _make_assessment(client)
+    created = client.post(
+        "/api/grievances",
+        json={
+            "user_reference": "APPEAL-TEST",
+            "assessment_id": assessment_id,
+            "reason": "Please review this local test case decision",
+        },
+    ).json()
+    case_id = created["case_id"]
+    appeal_payload = {"reason": "I request another review of this case"}
+    before_terminal = client.post(
+        f"/api/grievances/{case_id}/appeals", json=appeal_payload
+    )
+    assert before_terminal.status_code == 400
+
+    update = client.patch(
+        f"/api/grievances/{case_id}",
+        json={"status": "RESOLVED", "reviewer_note": "Closed in test"},
+    )
+    assert update.status_code == 200
+    submitted = client.post(
+        f"/api/grievances/{case_id}/appeals", json=appeal_payload
+    )
+    assert submitted.status_code == 201
+    assert submitted.json()["status"] == "SUBMITTED"
+    assert submitted.json()["simulated"] is True
+
+    listed = client.get(f"/api/grievances/{case_id}/appeals")
+    assert listed.status_code == 200
+    assert listed.json()["total"] == 1
+    assert listed.json()["items"][0]["appeal_id"] == submitted.json()["appeal_id"]
+    assert listed.json()["items"][0]["reason"] == appeal_payload["reason"]
+
+
+def test_grievance_cannot_repeat_or_skip_back_to_submitted(client):
+    assessment_id = _make_assessment(client)
+    created = client.post(
+        "/api/grievances",
+        json={
+            "user_reference": "TRANSITION-TEST",
+            "assessment_id": assessment_id,
+            "reason": "Validate the local grievance lifecycle transitions",
+        },
+    ).json()
+    case_id = created["case_id"]
+    first = client.patch(
+        f"/api/grievances/{case_id}",
+        json={"status": "UNDER_REVIEW", "reviewer_note": "Review started"},
+    )
+    assert first.status_code == 200
+    repeated = client.patch(
+        f"/api/grievances/{case_id}",
+        json={"status": "UNDER_REVIEW", "reviewer_note": "No state change"},
+    )
+    assert repeated.status_code == 400
+    assert repeated.json()["error"]["code"] == "BAD_REQUEST"

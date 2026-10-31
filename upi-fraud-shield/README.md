@@ -24,4 +24,6 @@ npm run dev
 
 The app runs at `http://localhost:5173`. Configure `VITE_API_BASE_URL=http://127.0.0.1:8000` if needed. Build with `npm run build`.
 
+The checked-in `.env.example` sets `VITE_API_BASE_URL` to the local FastAPI server. Copy it to `.env` for a new checkout (`Copy-Item .env.example .env` in PowerShell) and change only that value when the backend runs elsewhere. The API status banner and all API requests use this same setting.
+
 The root project README documents how to start the backend and warns about destructive database reset commands.

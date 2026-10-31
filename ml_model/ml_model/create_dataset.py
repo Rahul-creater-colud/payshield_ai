@@ -1,7 +1,14 @@
+"""Generate a reproducible synthetic demonstration dataset, not real outcomes."""
+
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
 
 np.random.seed(42)
+
+DATASET_DIR = Path(__file__).resolve().parent / "dataset"
+DATASET_DIR.mkdir(parents=True, exist_ok=True)
 
 n = 10000
 
@@ -44,9 +51,10 @@ df = pd.DataFrame({
     "is_fraud": is_fraud
 })
 
-df.to_csv("dataset/transactions.csv", index=False)
+output_path = DATASET_DIR / "transactions.csv"
+df.to_csv(output_path, index=False)
 
-print("Dataset generated successfully!")
+print(f"Synthetic demonstration dataset written to {output_path}")
 print("\nFirst 5 rows:")
 print(df.head())
 

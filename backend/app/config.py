@@ -23,7 +23,6 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5174",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "*",
     ]
 
     # Model / version
@@ -46,7 +45,7 @@ class Settings(BaseSettings):
     SNAPSHOT_PATH: str = "app/data/fallback/payshield_snapshot.db"
 
     # Admin
-    ENABLE_ADMIN: bool = True
+    ENABLE_ADMIN: bool = False
 
     # LLM & AI Explainer
     GEMINI_API_KEY: Optional[str] = None

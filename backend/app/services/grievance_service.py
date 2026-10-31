@@ -9,9 +9,15 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.errors import AppError, ErrorCode
-from app.models import Grievance, RiskAssessment
+from app.models import Grievance, GrievanceAppeal, RiskAssessment
+from app.services.audit_service import record_audit_event
 
 TERMINAL = {"RESOLVED", "REJECTED"}
+ALLOWED_TRANSITIONS = {
+    "SUBMITTED": {"UNDER_REVIEW", "MORE_INFO_REQUIRED", "RESOLVED", "REJECTED"},
+    "UNDER_REVIEW": {"MORE_INFO_REQUIRED", "RESOLVED", "REJECTED"},
+    "MORE_INFO_REQUIRED": {"UNDER_REVIEW", "RESOLVED", "REJECTED"},
+}
 
 
 def create_grievance(
@@ -38,6 +44,13 @@ def create_grievance(
         updated_at=now,
     )
     db.add(g)
+    record_audit_event(
+        db,
+        entity_type="grievance",
+        entity_id=case_id,
+        action="created",
+        details={"status": "SUBMITTED"},
+    )
     db.commit()
     db.refresh(g)
     return g
@@ -77,8 +90,12 @@ def update_grievance(
             f"Cannot update a {g.status} grievance – it is in a terminal state.",
             400,
         )
-    if new_status == "SUBMITTED":
-        raise AppError(ErrorCode.BAD_REQUEST, "Cannot set status back to SUBMITTED.", 400)
+    if new_status not in ALLOWED_TRANSITIONS.get(g.status, set()):
+        raise AppError(
+            ErrorCode.BAD_REQUEST,
+            f"Cannot transition a {g.status} grievance to {new_status}.",
+            400,
+        )
     now = datetime.now(timezone.utc).isoformat()
     history = list(g.status_history or [])
     history.append({"status": new_status, "note": reviewer_note, "at": now})
@@ -86,6 +103,51 @@ def update_grievance(
     g.reviewer_note = reviewer_note
     g.status_history = history
     g.updated_at = now
+    record_audit_event(
+        db,
+        entity_type="grievance",
+        entity_id=case_id,
+        action="status_updated",
+        details={"status": new_status},
+    )
     db.commit()
     db.refresh(g)
     return g
+
+
+def create_appeal(db: Session, case_id: str, reason: str) -> GrievanceAppeal:
+    grievance = get_grievance(db, case_id)
+    if grievance.status not in TERMINAL:
+        raise AppError(
+            ErrorCode.BAD_REQUEST,
+            "An appeal can only be submitted after a grievance is resolved or rejected.",
+            400,
+        )
+    appeal = GrievanceAppeal(
+        appeal_id=f"APL_{uuid.uuid4().hex.upper()}",
+        case_id=case_id,
+        reason=reason,
+        status="SUBMITTED",
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    db.add(appeal)
+    record_audit_event(
+        db,
+        entity_type="grievance_appeal",
+        entity_id=appeal.appeal_id,
+        action="submitted",
+        details={"case_id": case_id, "status": "SUBMITTED"},
+    )
+    db.commit()
+    db.refresh(appeal)
+    return appeal
+
+
+def list_appeals(db: Session, case_id: str) -> List[GrievanceAppeal]:
+    get_grievance(db, case_id)
+    return (
+        db.query(GrievanceAppeal)
+        .filter(GrievanceAppeal.case_id == case_id)
+        .order_by(GrievanceAppeal.created_at.asc())
+        .all()
+    )

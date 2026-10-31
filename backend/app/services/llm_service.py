@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from typing import Any, Dict, List, Optional
 
@@ -79,63 +80,60 @@ def _generate_deterministic_explanation(
 
     if category == "HIGH":
         if is_hindi:
-            summary = "अति गंभीर जोखिम: संभावित वित्तीय धोखाधड़ी या कलेक्ट ट्रैप"
+            summary = "उच्च जोखिम संकेत: भुगतान विवरण की जांच आवश्यक"
             if is_collect:
                 exp = (
-                    f"सावधान! यह लेन-देन ({amount_str}) एक आने वाली UPI कलेक्ट रिक्वेस्ट है, न कि कोई रिफंड या क्रेडिट। "
-                    f"UPI प्रोटोकॉल के नियमानुसार पैसे प्राप्त करने के लिए कभी भी UPI पिन दर्ज करने की आवश्यकता नहीं होती। "
-                    f"यदि आप इसे स्वीकार करते हैं, तो {amount_str} तुरंत आपके बैंक खाते से कटकर {receiver_upi} को चले जाएंगे।"
+                    f"यह {amount_str} की भुगतान अनुरोध है; इसे मंजूर करने पर आपके खाते से राशि कट सकती है। "
+                    "पैसे प्राप्त करने के लिए UPI PIN की जरूरत नहीं होती। PayShield केवल जोखिम का आकलन करता है "
+                    "और भुगतान को रोकता नहीं है।"
                 )
             elif is_impersonation or is_brand_spoof:
                 exp = (
-                    f"धोखाधड़ी का प्रयास! लाभार्थी UPI आईडी ({receiver_upi}) आधिकारिक बैंक या सपोर्ट डेस्क का रूप धारण कर रही है। "
-                    f"यह एक अनधिकृत निजी खाता है जिसे फर्जी कीवर्ड से छुपाया गया है। इस खाते को तुरंत ब्लॉक करें।"
+                    f"लाभार्थी आईडी ({receiver_upi}) में बैंक, रिफंड या सत्यापन से जुड़े शब्द हैं। "
+                    "यह संकेत अपने-आप धोखाधड़ी की पुष्टि नहीं करता; भुगतान से पहले आधिकारिक संपर्क माध्यम से जांचें।"
                 )
             elif is_mule or is_blacklist:
                 exp = (
-                    f"साइबर अपराध संज्ञान: लाभार्थी आईडी ({receiver_upi}) नेशनल थ्रेट इंटेलिजेंस रजिस्ट्री अथवा "
-                    f"म्यूल नेटवर्क पैटर्न में संदिग्ध पाई गई है। इस पर पूर्व में वित्तीय धोखाधड़ी की शिकायतें दर्ज हैं।"
+                    f"लाभार्थी आईडी ({receiver_upi}) से जुड़े स्थानीय संकेतों ने जोखिम बढ़ाया है। "
+                    "ये संकेत सत्यापित शिकायत या अपराध का प्रमाण नहीं हैं।"
                 )
             else:
                 exp = (
-                    f"उच्च जोखिम स्कोर ({score}/100): यह लेन-देन सामान्य खर्च सीमा से अधिक और संदिग्ध बैंक नोड्स से संबंधित है। "
-                    f"सुरक्षा प्रणाली द्वारा इसे आगे बढ़ने से रोक दिया गया है।"
+                    f"उच्च जोखिम स्कोर ({score}/100) मिला। आगे बढ़ने से पहले लेन-देन के विवरण की स्वतंत्र रूप से जांच करें; "
+                    "PayShield ने भुगतान को रोका नहीं है।"
                 )
             tips = [
                 "पैसे प्राप्त करने के लिए कभी भी अपना गुप्त UPI पिन दर्ज न करें।",
-                "इस रिक्वेस्ट को तुरंत अस्वीकार (REJECT) करें और खाते को ब्लॉक करें।",
-                "राष्ट्रीय साइबर अपराध हेल्पलाइन 1930 पर संदिग्ध UPI आईडी की शिकायत करें।",
+                "यदि आपने भुगतान अनुरोध शुरू नहीं किया है, तो अपने भुगतान ऐप में उसे अस्वीकार करें।",
+                "वास्तविक घटना का संदेह हो तो आधिकारिक साइबर अपराध सहायता चैनल से संपर्क करें।",
                 "किसी भी अज्ञात कॉलर या अनधिकृत ऐप के साथ स्क्रीन साझा न करें।",
             ]
         else:
-            summary = "Critical Risk: High-Probability Reverse Debit or Phishing Scam"
+            summary = "High Risk Signals: Verify the payment independently"
             if is_collect:
                 exp = (
-                    f"Critical Threat Intercepted: This transfer of {amount_str} is an inbound UPI Collect Request "
-                    f"disguised to appear as a credit or refund. In the National UPI architecture, receiving funds NEVER requires "
-                    f"entering your secret UPI PIN. Approving this notification will instantly DEBIT {amount_str} from your bank account "
-                    f"and route it to '{receiver_upi}'."
+                    f"This is a payment request for {amount_str}; approving it may debit your account. "
+                    "A UPI PIN is not needed to receive money. PayShield only assesses risk and does not stop payments."
                 )
             elif is_impersonation or is_brand_spoof:
                 exp = (
-                    f"Brand Impersonation Threat: The beneficiary handle '{receiver_upi}' deceives users by adopting official "
-                    f"banking, refund, or KYC verification terms. Forensic analysis confirms this is an unauthorized personal handle "
-                    f"masquerading as a financial institution."
+                    f"The beneficiary handle '{receiver_upi}' contains banking, refund, or verification terms. "
+                    "This signal is not proof of fraud; verify using an independently obtained official contact."
                 )
             elif is_mule or is_blacklist:
                 exp = (
-                    f"Threat Intelligence Match: The beneficiary handle '{receiver_upi}' is flagged in the National Fraud Intelligence "
-                    f"Registry with high-velocity mule fund dissipation patterns. Prior complaints indicate active scam operations."
+                    f"Local risk indicators matched patterns associated with beneficiary '{receiver_upi}'. "
+                    "These indicators are not independently verified reports or proof of wrongdoing."
                 )
             else:
                 exp = (
-                    f"High Risk Severity Flagged ({score}/100): Multiple behavioral and graph anomalies indicate this transaction "
-                    f"carries severe risk of capital loss. PayShield AI recommends terminating this transfer immediately."
+                    f"A high heuristic risk score ({score}/100) was calculated. Review the details independently before proceeding; "
+                    "PayShield has not blocked or executed this payment."
                 )
             tips = [
                 "NEVER enter your secret UPI PIN to receive money, refunds, or lottery prizes.",
-                "Decline and permanently block this collect request immediately.",
-                "Report this fraudulent UPI handle to the National Cyber Crime Portal (helpline 1930).",
+                "If you did not initiate a payment request, decline it in your payment app.",
+                "If you suspect a real incident, contact your bank or an official cybercrime channel.",
                 "Never download screen-sharing tools (AnyDesk, TeamViewer) at the request of an unverified caller.",
             ]
 
@@ -143,8 +141,8 @@ def _generate_deterministic_explanation(
         if is_hindi:
             summary = "मध्यम जोखिम: संदिग्ध गतिविधि और अपरिचित लाभार्थी"
             exp = (
-                f"सावधानी अपेक्षित ({score}/100): यह लेन-देन ({amount_str}) आपकी सामान्य खर्च आदतों से भिन्न है। "
-                f"लाभार्थी ({receiver_upi}) आपके पूर्व भुगतान इतिहास में नहीं है अथवा यह लेन-देन असामान्य समय पर शुरू किया गया है।"
+                f"सावधानी अपेक्षित ({score}/100): कुछ लेन-देन संकेत आपके सामान्य पैटर्न से अलग हैं। "
+                "यह संकेत धोखाधड़ी की पुष्टि नहीं करता; भुगतान से पहले प्राप्तकर्ता और उद्देश्य की जांच करें।"
             )
             tips = [
                 "UPI पिन दर्ज करने से पहले प्राप्तकर्ता के नाम और फ़ोन नंबर की पुनः पुष्टि करें।",
@@ -154,8 +152,8 @@ def _generate_deterministic_explanation(
         else:
             summary = "Moderate Risk: Behavioral Anomaly & Unfamiliar Payee"
             exp = (
-                f"Caution Advised ({score}/100): The transaction of {amount_str} to '{receiver_upi}' diverges from established baselines. "
-                f"Contributing signals include an unfamiliar payee, elevated value relative to historical spend, or atypical transaction timing."
+                f"Caution advised ({score}/100): one or more transaction signals differ from the available history. "
+                "This is not confirmation of fraud; verify the recipient and payment purpose."
             )
             tips = [
                 "Verify the exact beneficiary name displayed on your UPI application screen before entering PIN.",
@@ -165,20 +163,20 @@ def _generate_deterministic_explanation(
 
     else:
         if is_hindi:
-            summary = "सुरक्षित लेन-देन: सामान्य वित्तीय व्यवहार सत्यापित"
+            summary = "कम जोखिम संकेत: भुगतान विवरण फिर भी जांचें"
             exp = (
-                f"लेन-देन सत्यापित ({score}/100): लाभार्थी ({receiver_upi}) और राशि ({amount_str}) "
-                f"स्वीकृत सुरक्षा मापदंडों के भीतर हैं। कोई संदिग्ध नेटवर्क या ब्लैकलिस्ट पैटर्न नहीं पाया गया।"
+                f"दिए गए विवरण पर कम जोखिम संकेत मिले ({score}/100)। यह भुगतान की सुरक्षा की गारंटी नहीं है; "
+                "भुगतान से पहले प्राप्तकर्ता का नाम और राशि जांचें।"
             )
             tips = [
                 "हमेशा अंतिम पुष्टि स्क्रीन पर लाभार्थी का नाम ध्यानपूर्वक पढ़ें।",
                 "अपना गुप्त UPI पिन किसी भी व्यक्ति के साथ साझा न करें।",
             ]
         else:
-            summary = "Verified Safe: Standard Parameters Confirmed"
+            summary = "Low Risk Signals: Verify Before Paying"
             exp = (
-                f"Low Risk Confirmed ({score}/100): Transaction parameters for {amount_str} to '{receiver_upi}' conform "
-                f"to verified peer-to-peer or registered merchant activity. Zero blacklist hits or structural anomalies detected."
+                f"Low heuristic risk signals were observed ({score}/100). This does not guarantee that the payment is safe; "
+                "verify the recipient and amount before authorizing it."
             )
             tips = [
                 "Standard FinTech Precaution: Always verify the beneficiary name on screen before PIN authorization.",
@@ -193,7 +191,6 @@ def _generate_deterministic_explanation(
         "llm_status": "HEURISTIC_FALLBACK",
         "is_grounded": True,
         "language": "hi" if is_hindi else "en",
-        "confidence_score": 0.98 if category == "HIGH" else 0.92,
     }
 
 
@@ -280,30 +277,31 @@ def generate_explanation(
         category = risk_assessment.get("category", "LOW")
         reasons = risk_assessment.get("reasons", [])
         amount = transaction_data.get("amount", 0)
-        sender = transaction_data.get("sender_upi") or transaction_data.get("sender_id")
-        receiver = transaction_data.get("receiver_upi") or transaction_data.get("receiver_id")
         txn_type = transaction_data.get("transaction_type") or transaction_data.get("type", "P2P")
+        allowed_types = {"P2P", "P2M", "QR_SCAN", "BBPS", "COLLECT_REQUEST", "PAY"}
+        txn_type = txn_type if txn_type in allowed_types else "OTHER"
+        reason_codes = []
+        for reason in reasons if isinstance(reasons, list) else []:
+            code = reason.get("code") if isinstance(reason, dict) else None
+            if isinstance(code, str) and re.fullmatch(r"[A-Za-z0-9_]{1,48}", code):
+                reason_codes.append(code.upper())
 
         prompt = f"""You are the PayShield AI FinTech Security Assistant.
-Explain the following UPI transaction risk assessment clearly and objectively to a bank customer and fraud investigator.
-
-TRANSACTION DETAILS:
-- Amount: ₹{amount}
-- Sender: {sender}
-- Beneficiary VPA: {receiver}
-- Type: {txn_type}
-
-RISK EVALUATION (AUTHORITATIVE - DO NOT CONTRADICT):
-- Risk Score: {score}/100
-- Risk Category: {category}
-- Flagged Triggers: {json.dumps(reasons)}
+Explain this local prototype risk assessment using only the supplied non-identifying fields.
+RISK EVALUATION (authoritative; do not contradict):
+- Risk score: {score}/100
+- Risk category: {category}
+- Request type: {txn_type}
+- Trigger codes: {json.dumps(reason_codes[:20])}
 - Language: {language}
 
 STRICT CONSTRAINTS:
-1. Ground your explanation ENTIRELY in the provided details and flagged triggers.
-2. DO NOT hallucinate bank names, account numbers, or fictional claims not in the context.
-3. If category is HIGH or MEDIUM and this is a COLLECT_REQUEST, emphasize: "UPI PIN is NEVER required to receive money".
-4. Provide response as a JSON object with:
+1. Do not claim a bank, NPCI, merchant, threat registry, or payment-provider connection.
+2. Do not say that a payment was blocked, intercepted, verified, or executed.
+3. Do not claim a person or account committed fraud; risk signals are not proof.
+4. Never ask for a PIN, OTP, password, or other secret.
+5. If this is a COLLECT_REQUEST, explain that approving may debit money and a PIN is not needed to receive funds.
+6. Provide response as a JSON object with:
    - "explanation": (string) 2-3 concise sentences explaining the primary risk factors.
    - "safety_recommendations": (array of 3-4 strings) clear, actionable security instructions.
    - "risk_level_summary": (string) 1-sentence title summary of the risk.
@@ -324,7 +322,6 @@ STRICT CONSTRAINTS:
                 "llm_status": "ONLINE",
                 "is_grounded": True,
                 "language": language,
-                "confidence_score": 0.96,
                 "latency_ms": elapsed_ms,
             }
 

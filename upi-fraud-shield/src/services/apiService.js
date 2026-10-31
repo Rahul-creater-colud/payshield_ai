@@ -35,7 +35,8 @@ export const apiService = {
         receiver_upi: formData.receiverUpi,
         amount: parseFloat(formData.amount),
         transaction_time: formData.transactionTime || new Date().toISOString(),
-        transaction_type: formData.transactionType
+        transaction_type: formData.transactionType,
+        language: formData.language || "en"
       });
       return { source: "LIVE_API", data: response.data || response };
     }
@@ -64,10 +65,22 @@ export const apiService = {
   async getCollectRequests(mode = getStoredApiMode()) {
     if (mode === "LIVE") {
       const response = await apiClient.get(ENDPOINTS.COLLECT_REQUESTS);
-      return { source: "LIVE_API", data: response.data || response, total: response.total };
+      return {
+        source: "LIVE_API",
+        data: response.data,
+        total: response.total,
+        available: response.available,
+        data_label: response.data_label
+      };
     }
     const result = await mockDataService.getCollectRequests();
-    return { source: "MOCK_MODE", data: result.data, total: result.total };
+    return {
+      source: "MOCK_MODE",
+      data: result.data,
+      total: result.total,
+      available: true,
+      data_label: "DEMO DATA — synthetic requests"
+    };
   },
 
   async actionCollectRequest(id, action, mode = getStoredApiMode()) {
@@ -91,7 +104,7 @@ export const apiService = {
   async scanScreenshot(file, sampleKey = null, mode = getStoredApiMode()) {
     if (mode === "LIVE") {
       const formData = new FormData();
-      if (file) formData.append("image", file);
+      if (file && !sampleKey) formData.append("image", file);
       if (sampleKey) formData.append("sample_key", sampleKey);
 
       const response = await apiClient.post(ENDPOINTS.SCREENSHOT_SCAN, formData, {
@@ -169,6 +182,22 @@ export const apiService = {
     return { source: "LIVE_API", data: await apiClient.patch(ENDPOINTS.GRIEVANCE(id), payload) };
   },
 
+  async submitGrievanceAppeal(id, payload, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return {
+      source: "LIVE_API",
+      data: await apiClient.post(ENDPOINTS.GRIEVANCE_APPEALS(id), payload)
+    };
+  },
+
+  async getGrievanceAppeals(id, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return {
+      source: "LIVE_API",
+      data: await apiClient.get(ENDPOINTS.GRIEVANCE_APPEALS(id))
+    };
+  },
+
   async getRiskAssessments(params = {}, mode = getStoredApiMode()) {
     requireLiveMode(mode);
     return { source: "LIVE_API", data: await apiClient.get(ENDPOINTS.RISK_ASSESSMENTS, { params }) };
@@ -177,5 +206,29 @@ export const apiService = {
   async scanUrl(url, mode = getStoredApiMode()) {
     requireLiveMode(mode);
     return { source: "LIVE_API", data: await apiClient.post(ENDPOINTS.URL_SCAN, { url }) };
+  },
+
+  async createMerchantSession(payload, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return {
+      source: "LIVE_API",
+      data: await apiClient.post(ENDPOINTS.MERCHANT_SESSIONS, payload)
+    };
+  },
+
+  async getMerchantTransaction(reference, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return {
+      source: "LIVE_API",
+      data: await apiClient.get(ENDPOINTS.MERCHANT_TRANSACTION(reference))
+    };
+  },
+
+  async simulatePaymentCallback(payload, mode = getStoredApiMode()) {
+    requireLiveMode(mode);
+    return {
+      source: "LIVE_API",
+      data: await apiClient.post(ENDPOINTS.SIMULATE_PAYMENT_CALLBACK, payload)
+    };
   }
 };

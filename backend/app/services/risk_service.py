@@ -289,6 +289,7 @@ def assess(db: Session, req: RiskAssessRequest) -> Dict[str, Any]:
             "reasons": reason_dicts,
             "action": action,
         },
+        language=req.language,
     )
 
     # ------------------------------------------------------------------

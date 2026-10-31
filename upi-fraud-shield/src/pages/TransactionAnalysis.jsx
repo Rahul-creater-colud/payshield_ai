@@ -38,6 +38,7 @@ export const TransactionAnalysis = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [language, setLanguage] = useState("en");
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -121,7 +122,10 @@ export const TransactionAnalysis = () => {
     setResult(null);
 
     try {
-      const response = await apiService.analyzeTransaction(formData, mode);
+      const response = await apiService.analyzeTransaction(
+        { ...formData, language },
+        mode
+      );
       const data = response.data || response;
       setResult({
         ...data,
@@ -200,6 +204,24 @@ export const TransactionAnalysis = () => {
         {/* Form Container */}
         <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-200/90 p-6 lg:p-8 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label
+                htmlFor="safety-language"
+                className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
+              >
+                Safety guidance language
+              </label>
+              <select
+                id="safety-language"
+                value={language}
+                onChange={(event) => setLanguage(event.target.value)}
+                className="w-full sm:w-56 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 focus:border-blue-500 focus:bg-white outline-none"
+              >
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+              </select>
+            </div>
+
             {/* UPI Transaction ID */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -503,6 +525,29 @@ export const TransactionAnalysis = () => {
                   </p>
                 )}
               </div>
+
+              {result.safety_explanation && (
+                <div className="mb-5 rounded-xl border border-teal-100 bg-teal-50/70 p-4">
+                  <h4 className="text-xs font-bold text-slate-800">
+                    {result.safety_explanation.language === "hi"
+                      ? "सुरक्षा मार्गदर्शन"
+                      : "Safety guidance"}
+                  </h4>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-700">
+                    {result.safety_explanation.explanation}
+                  </p>
+                  {result.safety_explanation.safety_recommendations?.length > 0 && (
+                    <ul className="mt-2 list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-slate-600">
+                      {result.safety_explanation.safety_recommendations.map((tip) => (
+                        <li key={tip}>{tip}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="mt-2 text-[10px] text-slate-500">
+                    Local risk guidance only; PayShield does not verify or block payments.
+                  </p>
+                </div>
+              )}
 
               {/* Transaction Key Points */}
               <div className="grid grid-cols-2 gap-3 text-xs p-3.5 rounded-xl bg-slate-50/80 border border-slate-100 mb-5">

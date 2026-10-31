@@ -60,6 +60,86 @@ def test_api_v1_analyze_safe_p2m(client):
     assert data["riskScore"] <= 39
 
 
+def test_api_v1_analyze_returns_hindi_safety_guidance(client):
+    response = client.post(
+        "/api/v1/fraud/analyze",
+        json={
+            "transaction_id": "HINDI-GUIDANCE-TEST",
+            "sender_upi": "guidance-sender@upi",
+            "receiver_upi": "guidance-recipient@upi",
+            "amount": 500.0,
+            "transaction_type": "P2P",
+            "language": "hi",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["safety_explanation"]["language"] == "hi"
+    assert data["safety_explanation"]["safety_recommendations"]
+    assert "गारंटी" in data["safety_explanation"]["explanation"]
+
+
+def test_api_v1_analyze_integrates_saved_model_artifact(client, monkeypatch):
+    from app.config import settings
+    from app.services.ml_model_service import ml_model_service
+
+    monkeypatch.setattr(settings, "ML_MODEL_ENABLED", True)
+    monkeypatch.setattr(settings, "ML_MODEL_DIR", None)
+    monkeypatch.setattr(ml_model_service, "_loaded", False)
+    monkeypatch.setattr(ml_model_service, "_model", None)
+    monkeypatch.setattr(ml_model_service, "_threshold", None)
+
+    response = client.post(
+        "/api/v1/fraud/analyze",
+        json={
+            "transaction_id": "SAVED-ARTIFACT-INTEGRATION-TEST",
+            "sender_upi": "artifact-sender@upi",
+            "receiver_upi": "artifact-recipient@upi",
+            "amount": 4200.0,
+            "transaction_type": "P2P",
+        },
+    )
+
+    assert response.status_code == 200
+    model = response.json()["data"]["ml_model"]
+    assert model["status"] == "active"
+    assert model["model_name"] == "balanced_random_forest"
+    assert "synthetic labels" in model["training_data"].lower()
+    assert 0 <= model["probability"] <= 1
+    assert 0 <= model["threshold"] <= 1
+
+
+def test_api_v1_analyze_rejects_invalid_amounts_and_transaction_types(client):
+    payload = {
+        "sender_upi": "validation-sender@upi",
+        "receiver_upi": "validation-recipient@upi",
+        "amount": 100.0,
+    }
+
+    for invalid_amount in (0, -1, 1_000_001):
+        response = client.post(
+            "/api/v1/fraud/analyze",
+            json={**payload, "amount": invalid_amount},
+        )
+        assert response.status_code == 422
+        assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+    invalid_type = client.post(
+        "/api/v1/fraud/analyze",
+        json={**payload, "transaction_type": "UNKNOWN"},
+    )
+    assert invalid_type.status_code == 422
+    assert invalid_type.json()["error"]["code"] == "VALIDATION_ERROR"
+
+    invalid_language = client.post(
+        "/api/v1/fraud/analyze",
+        json={**payload, "language": "fr"},
+    )
+    assert invalid_language.status_code == 422
+    assert invalid_language.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
 def test_api_v1_get_transactions(client):
     r = client.get("/api/v1/transactions")
     assert r.status_code == 200
@@ -112,6 +192,28 @@ def test_api_v1_screenshot_ocr_sample(client):
     assert data["riskCategory"] == "HIGH"
     assert "extractedEntities" in data
     assert "forensicFindings" in data
+
+
+def test_api_v1_screenshot_ocr_supports_labeled_samples(client):
+    for sample_key in ("scan-sample-1", "scan-sample-2", "scan-sample-3"):
+        response = client.post(
+            "/api/v1/fraud/screenshot-ocr",
+            data={"sample_key": sample_key},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data_label"] == "DEMO DATA — sample response, image not analyzed"
+        assert body["simulated"] is True
+        assert body["data"]["id"] == sample_key
+
+
+def test_api_v1_screenshot_ocr_does_not_claim_uploaded_image_support(client):
+    response = client.post(
+        "/api/v1/fraud/screenshot-ocr",
+        files={"image": ("receipt.png", b"not-analyzed", "image/png")},
+    )
+    assert response.status_code == 501
+    assert response.json()["error"]["code"] == "BAD_REQUEST"
 
 
 def test_api_v1_fraud_alerts(client):

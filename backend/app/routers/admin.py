@@ -1,4 +1,4 @@
-"""Admin router – demo recovery (guarded by ENABLE_ADMIN setting)."""
+"""Admin router – destructive demo recovery, disabled by default."""
 
 from __future__ import annotations
 

@@ -31,6 +31,7 @@ export const ScreenshotPanel = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [activeSampleKey, setActiveSampleKey] = useState(null);
   const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
   const [scanResult, setScanResult] = useState(null);
 
   const sampleScenarios = mockScreenshotResults.sampleScams;
@@ -47,6 +48,7 @@ export const ScreenshotPanel = () => {
 
     setSelectedFile(file);
     setActiveSampleKey(null);
+    setScanError("");
     setScanResult(null);
 
     const reader = new FileReader();
@@ -60,6 +62,7 @@ export const ScreenshotPanel = () => {
   const handleSelectSample = (sample) => {
     setActiveSampleKey(sample.id);
     setSelectedFile({ name: sample.filename });
+    setScanError("");
     setScanResult(null);
 
     // Create an SVG data URL for realistic visual representation of the sample screenshot
@@ -92,6 +95,7 @@ export const ScreenshotPanel = () => {
     }
 
     setScanning(true);
+    setScanError("");
     setScanResult(null);
 
     try {
@@ -109,6 +113,7 @@ export const ScreenshotPanel = () => {
       }
     } catch (err) {
       console.error("Scan error:", err);
+      setScanError(err.message || "The sample could not be scanned.");
       toast.error(err.message || "Failed to scan screenshot", "OCR Error");
     } finally {
       setScanning(false);
@@ -119,6 +124,7 @@ export const ScreenshotPanel = () => {
     setSelectedFile(null);
     setImagePreview(null);
     setActiveSampleKey(null);
+    setScanError("");
     setScanResult(null);
   };
 
@@ -156,6 +162,11 @@ export const ScreenshotPanel = () => {
           ))}
         </div>
       </div>
+      {scanError && (
+        <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800">
+          {scanError}
+        </div>
+      )}
 
       {/* Main Grid: Upload & Preview on Left, Forensic OCR Output on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -214,7 +225,7 @@ export const ScreenshotPanel = () => {
                     {scanning ? (
                       <>
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Running Computer Vision OCR...</span>
+                        <span>Loading demo result...</span>
                       </>
                     ) : (
                       <>

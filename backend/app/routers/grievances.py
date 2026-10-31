@@ -14,6 +14,7 @@ from app.schemas import (
     GrievanceResponse,
     GrievanceListResponse,
     GrievanceUpdateRequest,
+    GrievanceAppealRequest,
     StatusHistoryEntry,
 )
 from app.services import grievance_service
@@ -87,3 +88,42 @@ def update_grievance(
         db, case_id=case_id, new_status=req.status, reviewer_note=req.reviewer_note
     )
     return _to_response(g)
+
+
+@router.post("/{case_id}/appeals", status_code=201)
+def submit_appeal(
+    case_id: str,
+    req: GrievanceAppealRequest,
+    db: Session = Depends(get_db),
+):
+    appeal = grievance_service.create_appeal(db, case_id, req.reason)
+    return {
+        "appeal_id": appeal.appeal_id,
+        "case_id": appeal.case_id,
+        "reason": appeal.reason,
+        "status": appeal.status,
+        "created_at": appeal.created_at,
+        "simulated": True,
+        "disclaimer": DISCLAIMER,
+    }
+
+
+@router.get("/{case_id}/appeals")
+def get_appeals(case_id: str, db: Session = Depends(get_db)):
+    appeals = grievance_service.list_appeals(db, case_id)
+    return {
+        "items": [
+            {
+                "appeal_id": appeal.appeal_id,
+                "case_id": appeal.case_id,
+                "reason": appeal.reason,
+                "status": appeal.status,
+                "created_at": appeal.created_at,
+                "simulated": True,
+            }
+            for appeal in appeals
+        ],
+        "total": len(appeals),
+        "simulated": True,
+        "disclaimer": DISCLAIMER,
+    }

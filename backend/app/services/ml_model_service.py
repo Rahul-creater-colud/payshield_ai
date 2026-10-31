@@ -107,6 +107,8 @@ class ExperimentalMLModelService:
     def __init__(self) -> None:
         self._model: Any = None
         self._threshold: Optional[float] = None
+        self._model_name = MODEL_NAME
+        self._training_data_label = TRAINING_DATA_LABEL
         self._loaded = False
         self._state: dict[str, Any] = {}
         self._lock = threading.Lock()
@@ -118,17 +120,39 @@ class ExperimentalMLModelService:
 
     def _load_artifacts(self) -> tuple[Any, float]:
         directory = self._artifact_directory()
-        model_path = directory / "fraud_model_tuned.pkl"
-        threshold_path = directory / "best_threshold.pkl"
-        if not model_path.is_file() or not threshold_path.is_file():
-            raise FileNotFoundError("Required model artifacts are missing.")
-
-        # These are trusted, locally configured project artifacts, never user uploads.
         import joblib
         importlib.import_module("pandas")
 
-        model = joblib.load(model_path)
-        threshold = float(joblib.load(threshold_path))
+        artifact_directory = directory / "artifacts"
+        packaged_model_path = artifact_directory / "best_model.joblib"
+        packaged_threshold_path = artifact_directory / "best_threshold.joblib"
+        legacy_model_path = directory / "fraud_model_tuned.pkl"
+        legacy_threshold_path = directory / "best_threshold.pkl"
+
+        # These are trusted, locally configured project artifacts, never user uploads.
+        if packaged_model_path.is_file() or packaged_threshold_path.is_file():
+            if not packaged_model_path.is_file() or not packaged_threshold_path.is_file():
+                raise FileNotFoundError("The packaged model and threshold must both exist.")
+            package = joblib.load(packaged_model_path)
+            if not isinstance(package, dict):
+                raise ValueError("The packaged model artifact has an invalid format.")
+            model = package.get("pipeline")
+            feature_names = package.get("feature_names")
+            if tuple(feature_names or ()) != FEATURE_NAMES:
+                raise ValueError("The packaged artifact feature schema does not match inference.")
+            self._model_name = str(package.get("model_name") or MODEL_NAME)
+            self._training_data_label = str(
+                package.get("training_data") or TRAINING_DATA_LABEL
+            )
+            threshold = float(joblib.load(packaged_threshold_path))
+        elif legacy_model_path.is_file() and legacy_threshold_path.is_file():
+            model = joblib.load(legacy_model_path)
+            threshold = float(joblib.load(legacy_threshold_path))
+        else:
+            raise FileNotFoundError(
+                "No complete packaged or legacy model artifacts were found."
+            )
+
         if not math.isfinite(threshold) or not 0 <= threshold <= 1:
             raise ValueError("The model threshold must be between 0 and 1.")
         if getattr(model, "n_features_in_", None) != len(FEATURE_NAMES):
@@ -182,8 +206,8 @@ class ExperimentalMLModelService:
         self._ensure_loaded()
         return {
             "status": self._state["status"],
-            "model_name": MODEL_NAME,
-            "training_data": TRAINING_DATA_LABEL,
+            "model_name": self._model_name,
+            "training_data": self._training_data_label,
             "affects_final_score": False,
             "message": self._state["message"],
         }

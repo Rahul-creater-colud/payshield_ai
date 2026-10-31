@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useApiMode } from "../hooks/useApiMode";
 import { useToast } from "../hooks/useToast";
+import { API_BASE_URL } from "../api/axiosClient";
 
 const pageTitles = {
   "/": { title: "Dashboard", subtitle: "Stored transaction records and local risk assessments" },
@@ -53,7 +54,10 @@ export const Navbar = ({ onToggleSidebar }) => {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <div className="hidden items-center gap-2 rounded-md border border-outline-soft bg-canvas px-3 py-1.5 text-[10px] font-semibold text-slate-700 md:flex">
+          <div
+            title={`FastAPI API: ${API_BASE_URL}`}
+            className="hidden items-center gap-2 rounded-md border border-outline-soft bg-canvas px-3 py-1.5 text-[10px] font-semibold text-slate-700 md:flex"
+          >
             <span className={`h-2 w-2 rounded-full ${isBackendReachable ? "bg-emerald-500" : "bg-rose-500"}`} />
             {isBackendReachable ? "LOCAL SERVICE CONNECTED" : "BACKEND DISCONNECTED"}
           </div>

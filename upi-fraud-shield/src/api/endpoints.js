@@ -18,9 +18,5 @@ export const ENDPOINTS = {
   GRIEVANCES: "/api/grievances",
   GRIEVANCE: (caseId) => `/api/grievances/${encodeURIComponent(caseId)}`,
   RISK_ASSESSMENTS: "/api/risk/assessments",
-  URL_SCAN: "/api/urls/scan",
-  MERCHANT_SESSIONS: "/api/merchant/sessions",
-  MERCHANT_LEDGER: (sessionId) => `/api/merchant/sessions/${encodeURIComponent(sessionId)}/ledger`,
-  SIMULATE_PAYMENT_CALLBACK: (sessionId) =>
-    `/api/merchant/sessions/${encodeURIComponent(sessionId)}/callbacks/simulate`
+  URL_SCAN: "/api/urls/scan"
 };

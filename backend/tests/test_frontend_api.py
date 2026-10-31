@@ -12,7 +12,7 @@ def test_api_v1_health(client):
     assert body["detection_engine"] == "rule-based heuristics"
     assert body["payment_provider_integration"] is False
     assert body["simulated"] is True
-    assert body["data_label"] == "LOCAL PROTOTYPE RECORDS (MAY INCLUDE SYNTHETIC SEED DATA)"
+    assert body["data_label"] == "DEMO / SYNTHETIC DATA"
     assert body["ml_model"]["status"] in {"active", "disabled", "unavailable"}
     assert body["ml_model"]["affects_final_score"] is False
 
@@ -97,7 +97,7 @@ def test_api_v1_fraud_analytics(client):
     assert "riskDistribution" in body
     assert body["metrics"]["totalTransactions"] == client.get("/api/v1/transactions").json()["total"]
     assert body["metrics"]["totalFraudPreventedAmount"] is None
-    assert body["data_label"] == "LOCAL PROTOTYPE RECORDS (MAY INCLUDE SYNTHETIC SEED DATA)"
+    assert body["data_label"] == "DEMO / SYNTHETIC DATA"
 
 
 def test_api_v1_screenshot_ocr_sample(client):

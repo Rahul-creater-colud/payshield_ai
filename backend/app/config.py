@@ -23,6 +23,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5174",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "*",
     ]
 
     # Model / version
@@ -46,7 +47,6 @@ class Settings(BaseSettings):
 
     # Admin
     ENABLE_ADMIN: bool = True
-    ENABLE_SIMULATED_CALLBACKS: bool = True
 
     # LLM & AI Explainer
     GEMINI_API_KEY: Optional[str] = None
@@ -56,8 +56,8 @@ class Settings(BaseSettings):
 
     # Disclaimer
     DISCLAIMER: str = (
-        "Local risk-assessment prototype; stored records may include synthetic seed data. "
-        "Scores are illustrative heuristics, not proof of fraud."
+        "Prototype using synthetic data. "
+        "Risk scores are illustrative heuristics, not proof of fraud."
     )
 
     @field_validator("CORS_ORIGINS", mode="before")

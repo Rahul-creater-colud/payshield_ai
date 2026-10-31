@@ -33,9 +33,6 @@ export const TransactionAnalysis = () => {
     senderUpi: "",
     receiverUpi: "",
     amount: "",
-    messageText: "",
-    url: "",
-    unsolicited: false,
     transactionTime: new Date().toISOString().slice(0, 16),
     transactionType: "P2P"
   });
@@ -129,7 +126,7 @@ export const TransactionAnalysis = () => {
       setResult({
         ...data,
         source: response.source,
-        data_label: data.data_label || (mode === "MOCK" ? "DEMO DATA" : "LOCAL PROTOTYPE RECORDS")
+        data_label: data.data_label || (mode === "MOCK" ? "DEMO DATA" : "DEMO / SYNTHETIC DATA")
       });
 
       if (data.riskCategory === "HIGH") {
@@ -153,9 +150,6 @@ export const TransactionAnalysis = () => {
       senderUpi: "",
       receiverUpi: "",
       amount: "",
-      messageText: "",
-      url: "",
-      unsolicited: false,
       transactionTime: new Date().toISOString().slice(0, 16),
       transactionType: "P2P"
     });
@@ -175,7 +169,7 @@ export const TransactionAnalysis = () => {
             Submit transaction details for local rule-based analysis with an optional experimental ML estimate. No UPI network, NPCI registry, or payment provider is connected.
           </p>
           <p className="mt-1 text-[11px] font-semibold text-amber-700">
-            Analysis-only prototype • preset scenarios and seed rows may be synthetic; submitted records are local • no payment is executed or blocked
+            Analysis-only prototype • records and preset scenarios are demo/synthetic data • no payment is executed or blocked
           </p>
         </div>
 
@@ -355,56 +349,6 @@ export const TransactionAnalysis = () => {
                 Nocturnal transfers (11 PM - 5 AM) receive elevated scrutiny from velocity anomaly filters.
               </p>
             </div>
-
-            <section className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Optional scam context
-              </h3>
-              <div className="mt-3 space-y-3">
-                <label className="block text-[11px] font-semibold text-slate-600">
-                  Message or request text
-                  <textarea
-                    name="messageText"
-                    value={formData.messageText || ""}
-                    onChange={handleInputChange}
-                    maxLength={4000}
-                    rows={2}
-                    placeholder="Paste suspicious message text only; never include PINs or OTPs"
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-normal text-slate-800 outline-none focus:border-blue-500"
-                  />
-                </label>
-                <label className="block text-[11px] font-semibold text-slate-600">
-                  Link to scan (static, no visit)
-                  <input
-                    type="url"
-                    name="url"
-                    value={formData.url || ""}
-                    onChange={handleInputChange}
-                    maxLength={2048}
-                    placeholder="https://example.invalid"
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-normal text-slate-800 outline-none focus:border-blue-500"
-                  />
-                </label>
-                <label className="flex items-center gap-2 text-[11px] text-slate-600">
-                  <input
-                    type="checkbox"
-                    name="unsolicited"
-                    checked={Boolean(formData.unsolicited)}
-                    onChange={(event) =>
-                      setFormData((previous) => ({
-                        ...previous,
-                        unsolicited: event.target.checked
-                      }))
-                    }
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  This request was unsolicited
-                </label>
-              </div>
-              <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
-                Text and URL checks use local rules and stored indicators only. URLs are not opened or fetched.
-              </p>
-            </section>
 
             {/* Action buttons */}
             <div className="pt-4 flex items-center gap-3">

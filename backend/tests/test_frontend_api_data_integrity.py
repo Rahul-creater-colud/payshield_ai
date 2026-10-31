@@ -53,7 +53,7 @@ def test_empty_database_returns_zeroes_and_no_sample_rows(empty_client):
         "success": True,
         "total": 0,
         "data": [],
-        "data_label": "LOCAL PROTOTYPE RECORDS (MAY INCLUDE SYNTHETIC SEED DATA)",
+        "data_label": "DEMO / SYNTHETIC DATA",
         "simulated": True,
     }
     assert alerts["total"] == 0

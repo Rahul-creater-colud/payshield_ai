@@ -205,7 +205,7 @@ export const FraudAnalytics = () => {
       </div>
 
       <DataNotice tone="warning">
-        These visualizations summarize local prototype records, which may include synthetic seed data, and rule-based scores. They are not real-time UPI telemetry, validated model performance, or confirmed fraud categories.
+        These visualizations summarize locally stored synthetic records and rule-based scores. They are not real-time UPI telemetry, validated model performance, or confirmed fraud categories.
       </DataNotice>
 
       {/* Row 1: Daily Fraud Detection & Transaction Volume (Dual Graphs) */}

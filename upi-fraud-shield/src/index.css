@@ -102,31 +102,6 @@
   opacity: 0.6;
 }
 
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 1px solid #cbd6e6;
-  border-radius: 0.5rem;
-  background: #fff;
-  padding: 0.625rem 0.875rem;
-  color: #0b1c30;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  transition: background-color 150ms ease, border-color 150ms ease;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  border-color: #9aabc1;
-  background: #f3f6fa;
-}
-
-.btn-secondary:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
 /* Glassmorphism card utility */
 .glass-card {
   background: rgba(255, 255, 255, 0.95);

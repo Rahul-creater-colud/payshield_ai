@@ -116,7 +116,7 @@ export default function FraudNetwork() {
       <PageHeading
         eyebrow="Entity relationships"
         title="Fraud Network"
-        description="Explore account relationships and graph patterns derived from local prototype records, which may include synthetic seed data. Connections are indicators, not proof of wrongdoing."
+        description="Explore account relationships and graph patterns derived from locally stored synthetic records. Connections are indicators, not proof of wrongdoing."
         actions={<DataLabel />}
       />
 

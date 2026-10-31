@@ -21,7 +21,6 @@ from app.routers import (
     intelligence,
     admin,
     frontend_api,
-    merchant,
 )
 
 
@@ -36,7 +35,7 @@ def create_app() -> FastAPI:
     _app = FastAPI(
         title="PayShield AI",
         description=(
-            "Local rule-based risk assessment prototype; stored records may include synthetic seed data. "
+            "Local rule-based risk assessment prototype using synthetic data. "
             "No NPCI or payment-provider integration; payments are not executed or blocked."
         ),
         version=settings.MODEL_VERSION,
@@ -66,7 +65,6 @@ def create_app() -> FastAPI:
     _app.include_router(intelligence.router)
     _app.include_router(admin.router)
     _app.include_router(frontend_api.router)
-    _app.include_router(merchant.router)
 
     @_app.get("/")
     def root():

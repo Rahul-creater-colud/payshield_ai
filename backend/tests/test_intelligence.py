@@ -15,7 +15,7 @@ def test_intelligence_list_shape(client):
     assert "items" in body
     assert "total" in body
     assert "data_label" in body
-    assert body["data_label"] == "LOCAL INDICATOR RECORDS (NOT INDEPENDENTLY VERIFIED)"
+    assert body["data_label"] == "SYNTHETIC"
 
 
 def test_intelligence_list_has_seed_data(client):

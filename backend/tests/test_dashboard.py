@@ -21,7 +21,7 @@ def test_dashboard_has_required_keys(client):
 
 def test_dashboard_data_label(client):
     body = client.get("/api/dashboard/summary").json()
-    assert body["data_label"] == "LOCAL PROTOTYPE RECORDS (MAY INCLUDE SYNTHETIC SEED DATA)"
+    assert body["data_label"] == "DEMO / SYNTHETIC DATA"
 
 
 def test_dashboard_simulated_true(client):

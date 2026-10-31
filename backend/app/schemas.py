@@ -5,17 +5,16 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 DISCLAIMER = (
-    "Local risk-assessment prototype; stored records may include synthetic seed data. "
-    "Scores are illustrative heuristics, not proof of fraud."
+    "Prototype using synthetic data. "
+    "Risk scores are illustrative heuristics, not proof of fraud."
 )
-LOCAL_DATA_LABEL = "LOCAL PROTOTYPE RECORDS (MAY INCLUDE SYNTHETIC SEED DATA)"
 
 FORBIDDEN_FIELDS = {"pin", "otp", "password", "card_number", "cvv", "secret"}
 
@@ -105,18 +104,6 @@ class RiskContext(BaseModel):
     unsolicited: bool = False
     events: Optional[List[str]] = None
 
-    @model_validator(mode="before")
-    @classmethod
-    def _reject_credentials(cls, values):
-        if isinstance(values, dict):
-            bad = set(values) & FORBIDDEN_FIELDS
-            if bad:
-                raise ValueError(
-                    f"Forbidden fields detected: {', '.join(sorted(bad))}. "
-                    "Never send PINs, OTPs, passwords, or card credentials."
-                )
-        return values
-
 
 class RiskAssessRequest(BaseModel):
     sender_id: str
@@ -125,16 +112,6 @@ class RiskAssessRequest(BaseModel):
     request_type: str = Field(default="PAY")
     timestamp: Optional[str] = None
     context: Optional[RiskContext] = None
-
-    @field_validator("timestamp")
-    @classmethod
-    def _validate_timestamp(cls, value: Optional[str]) -> Optional[str]:
-        if value is not None:
-            try:
-                datetime.fromisoformat(value.replace("Z", "+00:00"))
-            except ValueError as exc:
-                raise ValueError("timestamp must be a valid ISO 8601 timestamp") from exc
-        return value
 
     @field_validator("request_type")
     @classmethod
@@ -311,29 +288,6 @@ class GrievanceListResponse(BaseModel):
     total: int
 
 
-class MerchantSessionCreateRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    merchant_id: str = Field(..., min_length=1, max_length=100)
-    expected_amount: float = Field(..., gt=0, le=10_000_000)
-
-
-class SimulatedPaymentCallbackRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    amount: float = Field(..., gt=0, le=10_000_000)
-    status: str = "SUCCESS"
-    reference: Optional[str] = Field(None, max_length=100)
-
-    @field_validator("status")
-    @classmethod
-    def _validate_status(cls, value: str) -> str:
-        normalized = value.upper()
-        if normalized not in {"SUCCESS", "FAILED"}:
-            raise ValueError("status must be SUCCESS or FAILED")
-        return normalized
-
-
 # ---------------------------------------------------------------------------
 # Dashboard
 # ---------------------------------------------------------------------------
@@ -378,7 +332,7 @@ class DashboardSummaryResponse(BaseModel):
     recent_alerts: List[RecentAlert]
     grievance_summary: GrievanceSummary
     suspicious_clusters: List[SuspiciousCluster] = []
-    data_label: str = LOCAL_DATA_LABEL
+    data_label: str = "DEMO / SYNTHETIC DATA"
     simulated: bool = True
 
 
@@ -400,7 +354,7 @@ class IntelligenceItem(BaseModel):
 class IntelligenceListResponse(BaseModel):
     items: List[IntelligenceItem]
     total: int
-    data_label: str = "LOCAL INDICATOR RECORDS (NOT INDEPENDENTLY VERIFIED)"
+    data_label: str = "SYNTHETIC"
 
 
 class IntelligenceReportRequest(BaseModel):

@@ -15,14 +15,6 @@ export default function MerchantVerification() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [merchantId, setMerchantId] = useState("MERCH_DEMO_001");
-  const [expectedAmount, setExpectedAmount] = useState("");
-  const [callbackAmount, setCallbackAmount] = useState("");
-  const [callbackStatus, setCallbackStatus] = useState("SUCCESS");
-  const [ledgerSessionId, setLedgerSessionId] = useState("");
-  const [ledgerResult, setLedgerResult] = useState(null);
-  const [ledgerError, setLedgerError] = useState("");
-  const [ledgerLoading, setLedgerLoading] = useState(false);
 
   const loadCatalog = async () => {
     setLoading(true);
@@ -67,60 +59,6 @@ export default function MerchantVerification() {
     setSearched(true);
   };
 
-  const handleCreateLedgerSession = async (event) => {
-    event.preventDefault();
-    setLedgerLoading(true);
-    setLedgerError("");
-    setLedgerResult(null);
-    try {
-      const response = await apiService.createMerchantSession({
-        merchant_id: merchantId.trim(),
-        expected_amount: Number(expectedAmount)
-      }, mode);
-      setLedgerSessionId(response.data.session_id);
-      setCallbackAmount(String(response.data.expected_amount));
-      const verification = await apiService.getMerchantLedger(response.data.session_id, mode);
-      setLedgerResult(verification.data);
-    } catch (requestError) {
-      setLedgerError(requestError.message || "Could not create a local merchant session.");
-    } finally {
-      setLedgerLoading(false);
-    }
-  };
-
-  const handleVerifyLedger = async (event) => {
-    event.preventDefault();
-    setLedgerLoading(true);
-    setLedgerError("");
-    try {
-      const response = await apiService.getMerchantLedger(ledgerSessionId.trim(), mode);
-      setLedgerResult(response.data);
-    } catch (requestError) {
-      setLedgerResult(null);
-      setLedgerError(requestError.message || "Could not verify the local merchant ledger.");
-    } finally {
-      setLedgerLoading(false);
-    }
-  };
-
-  const handleSimulateCallback = async (event) => {
-    event.preventDefault();
-    setLedgerLoading(true);
-    setLedgerError("");
-    try {
-      await apiService.simulatePaymentCallback(ledgerSessionId.trim(), {
-        amount: Number(callbackAmount),
-        status: callbackStatus
-      }, mode);
-      const response = await apiService.getMerchantLedger(ledgerSessionId.trim(), mode);
-      setLedgerResult(response.data);
-    } catch (requestError) {
-      setLedgerError(requestError.message || "Could not record the simulated callback.");
-    } finally {
-      setLedgerLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <PageHeading
@@ -140,111 +78,6 @@ export default function MerchantVerification() {
       <DataNotice tone="warning">
         <strong>No external merchant registry is connected.</strong> PayShield cannot verify a business with a bank, NPCI, PSP, or government registry. The catalog below contains synthetic account references only.
       </DataNotice>
-
-      <section className="surface-card space-y-4 p-5 sm:p-6">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-semibold text-ink">Merchant ledger reconciliation</h3>
-            <DataLabel>SIMULATED CALLBACKS ONLY</DataLabel>
-          </div>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Create a local expected-amount session, record an explicitly simulated callback, and compare the stored amount. This does not confirm a real payment.
-          </p>
-        </div>
-
-        <form onSubmit={handleCreateLedgerSession} className="grid gap-3 sm:grid-cols-3">
-          <label className="text-[11px] font-semibold text-slate-600">
-            Merchant reference
-            <input
-              value={merchantId}
-              onChange={(event) => setMerchantId(event.target.value)}
-              required
-              maxLength={100}
-              className="form-control mt-1"
-            />
-          </label>
-          <label className="text-[11px] font-semibold text-slate-600">
-            Expected amount (₹)
-            <input
-              type="number"
-              min="0.01"
-              max="10000000"
-              step="0.01"
-              value={expectedAmount}
-              onChange={(event) => setExpectedAmount(event.target.value)}
-              required
-              className="form-control mt-1"
-            />
-          </label>
-          <div className="flex items-end">
-            <button type="submit" className="btn-primary w-full" disabled={ledgerLoading || !merchantId.trim() || Number(expectedAmount) <= 0}>
-              {ledgerLoading ? "Saving..." : "Create local session"}
-            </button>
-          </div>
-        </form>
-
-        <form onSubmit={handleVerifyLedger} className="grid gap-3 sm:grid-cols-[1fr_auto]">
-          <label className="text-[11px] font-semibold text-slate-600">
-            Session ID
-            <input
-              value={ledgerSessionId}
-              onChange={(event) => setLedgerSessionId(event.target.value)}
-              placeholder="e.g. SESS_001"
-              required
-              maxLength={100}
-              className="form-control mt-1 font-mono"
-            />
-          </label>
-          <button type="submit" className="btn-secondary" disabled={ledgerLoading || !ledgerSessionId.trim()}>
-            Verify local ledger
-          </button>
-        </form>
-
-        {ledgerSessionId.trim() && (
-          <form onSubmit={handleSimulateCallback} className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
-            <label className="text-[11px] font-semibold text-slate-600">
-              Simulated callback amount (₹)
-              <input
-                type="number"
-                min="0.01"
-                max="10000000"
-                step="0.01"
-                value={callbackAmount}
-                onChange={(event) => setCallbackAmount(event.target.value)}
-                required
-                className="form-control mt-1"
-              />
-            </label>
-            <label className="text-[11px] font-semibold text-slate-600">
-              Callback status
-              <select value={callbackStatus} onChange={(event) => setCallbackStatus(event.target.value)} className="form-control mt-1">
-                <option value="SUCCESS">Success (simulated)</option>
-                <option value="FAILED">Failed (simulated)</option>
-              </select>
-            </label>
-            <div className="flex items-end">
-              <button type="submit" className="btn-secondary w-full" disabled={ledgerLoading || Number(callbackAmount) <= 0}>
-                Record simulated callback
-              </button>
-            </div>
-          </form>
-        )}
-
-        {ledgerLoading && <p className="text-xs text-slate-500">Checking local stored records...</p>}
-        {ledgerError && <p role="alert" className="rounded border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{ledgerError}</p>}
-        {ledgerResult && (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs">
-            <p className="font-semibold text-slate-800">
-              Ledger result: {ledgerResult.ledger_status.replaceAll("_", " ")}
-            </p>
-            <p className="mt-1 text-slate-600">
-              Expected ₹{Number(ledgerResult.session.expected_amount).toFixed(2)}
-              {ledgerResult.callback && ` · callback ₹${Number(ledgerResult.callback.amount).toFixed(2)} (${ledgerResult.callback.status})`}
-            </p>
-            <p className="mt-2 leading-relaxed text-amber-800">{ledgerResult.disclaimer}</p>
-          </div>
-        )}
-      </section>
 
       {loading ? (
         <section className="surface-card">

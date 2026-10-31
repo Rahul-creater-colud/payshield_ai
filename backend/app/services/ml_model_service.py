@@ -24,7 +24,7 @@ FEATURE_NAMES = (
     "amount_deviation",
 )
 
-DEFAULT_MODEL_NAME = "Experimental classifier"
+MODEL_NAME = "Experimental Random Forest"
 TRAINING_DATA_LABEL = "Synthetic generated labels; not real UPI outcomes"
 
 
@@ -107,8 +107,6 @@ class ExperimentalMLModelService:
     def __init__(self) -> None:
         self._model: Any = None
         self._threshold: Optional[float] = None
-        self._model_name = DEFAULT_MODEL_NAME
-        self._training_data = TRAINING_DATA_LABEL
         self._loaded = False
         self._state: dict[str, Any] = {}
         self._lock = threading.Lock()
@@ -116,19 +114,12 @@ class ExperimentalMLModelService:
     def _artifact_directory(self) -> Path:
         if settings.ML_MODEL_DIR:
             return Path(settings.ML_MODEL_DIR).expanduser()
-        project_model_dir = Path(__file__).resolve().parents[3] / "ml_model" / "ml_model"
-        trained_artifacts = project_model_dir / "artifacts"
-        if (trained_artifacts / "best_model.joblib").is_file():
-            return trained_artifacts
-        return project_model_dir
+        return Path(__file__).resolve().parents[3] / "ml_model" / "ml_model"
 
     def _load_artifacts(self) -> tuple[Any, float]:
         directory = self._artifact_directory()
-        model_path = directory / "best_model.joblib"
-        threshold_path = directory / "best_threshold.joblib"
-        if not model_path.is_file() or not threshold_path.is_file():
-            model_path = directory / "fraud_model_tuned.pkl"
-            threshold_path = directory / "best_threshold.pkl"
+        model_path = directory / "fraud_model_tuned.pkl"
+        threshold_path = directory / "best_threshold.pkl"
         if not model_path.is_file() or not threshold_path.is_file():
             raise FileNotFoundError("Required model artifacts are missing.")
 
@@ -136,16 +127,7 @@ class ExperimentalMLModelService:
         import joblib
         importlib.import_module("pandas")
 
-        artifact = joblib.load(model_path)
-        if isinstance(artifact, dict) and "pipeline" in artifact:
-            model = artifact["pipeline"]
-            self._model_name = str(artifact.get("model_name", DEFAULT_MODEL_NAME))
-            self._training_data = str(artifact.get("training_data", TRAINING_DATA_LABEL))
-            artifact_features = tuple(artifact.get("feature_names", ()))
-            if artifact_features != FEATURE_NAMES:
-                raise ValueError("The saved pipeline feature list does not match inference.")
-        else:
-            model = artifact
+        model = joblib.load(model_path)
         threshold = float(joblib.load(threshold_path))
         if not math.isfinite(threshold) or not 0 <= threshold <= 1:
             raise ValueError("The model threshold must be between 0 and 1.")
@@ -200,8 +182,8 @@ class ExperimentalMLModelService:
         self._ensure_loaded()
         return {
             "status": self._state["status"],
-            "model_name": self._model_name,
-            "training_data": self._training_data,
+            "model_name": MODEL_NAME,
+            "training_data": TRAINING_DATA_LABEL,
             "affects_final_score": False,
             "message": self._state["message"],
         }

@@ -22,14 +22,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.errors import AppError, ErrorCode
-from app.models import (
-    DemoUser,
-    AccountOrVPA,
-    Transaction,
-    RiskAssessment,
-    GraphEdge,
-    MLModelResult,
-)
+from app.models import DemoUser, AccountOrVPA, Transaction, RiskAssessment
 from app.schemas import RiskAssessRequest
 
 from app.engine import behaviour as behaviour_engine
@@ -264,13 +257,6 @@ def assess(db: Session, req: RiskAssessRequest) -> Dict[str, Any]:
         session_id=None,
     )
     db.add(txn)
-    db.add(GraphEdge(
-        source_account=req.sender_id,
-        target_account=req.receiver_id,
-        amount=req.amount,
-        timestamp=ctx_timestamp,
-        transaction_id=txn_id,
-    ))
 
     asm = RiskAssessment(
         assessment_id=asm_id,
@@ -284,19 +270,6 @@ def assess(db: Session, req: RiskAssessRequest) -> Dict[str, Any]:
         created_at=now_str,
     )
     db.add(asm)
-    db.add(MLModelResult(
-        assessment_id=asm_id,
-        status=ml_assessment["status"],
-        model_name=ml_assessment["model_name"],
-        training_data=ml_assessment["training_data"],
-        affects_final_score=ml_assessment["affects_final_score"],
-        message=ml_assessment["message"],
-        probability=ml_assessment["probability"],
-        threshold=ml_assessment["threshold"],
-        prediction=ml_assessment["prediction"],
-        feature_assumptions=ml_assessment["feature_assumptions"],
-        calculated_at=now_str,
-    ))
     db.commit()
 
     # ------------------------------------------------------------------
@@ -370,7 +343,7 @@ def get_assessment(db: Session, assessment_id: str) -> Dict[str, Any]:
         "layer_scores": {"behaviour": 0, "graph": 0, "playbook": 0, "intelligence": 0},
         "collect_request_warning": collect_warn,
         "model_version": asm.model_version,
-        "ml_model": _stored_ml_model(db, asm.assessment_id),
+        "ml_model": None,
         "simulated": True,
         "disclaimer": settings.DISCLAIMER,
     }
@@ -405,25 +378,8 @@ def list_assessments(db: Session, limit: int = 20) -> List[Dict[str, Any]]:
             "layer_scores": {"behaviour": 0, "graph": 0, "playbook": 0, "intelligence": 0},
             "collect_request_warning": collect_warn,
             "model_version": asm.model_version,
-            "ml_model": _stored_ml_model(db, asm.assessment_id),
+            "ml_model": None,
             "simulated": True,
             "disclaimer": settings.DISCLAIMER,
         })
     return results
-
-
-def _stored_ml_model(db: Session, assessment_id: str) -> Optional[Dict[str, Any]]:
-    result: Optional[MLModelResult] = db.get(MLModelResult, assessment_id)
-    if result is None:
-        return None
-    return {
-        "status": result.status,
-        "model_name": result.model_name,
-        "training_data": result.training_data,
-        "affects_final_score": result.affects_final_score,
-        "message": result.message,
-        "probability": result.probability,
-        "threshold": result.threshold,
-        "prediction": result.prediction,
-        "feature_assumptions": result.feature_assumptions or [],
-    }

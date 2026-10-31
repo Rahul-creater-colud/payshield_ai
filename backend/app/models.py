@@ -73,26 +73,6 @@ class RiskAssessment(Base):
     created_at = Column(String, nullable=False)
 
 
-class MLModelResult(Base):
-    __tablename__ = "ml_model_results"
-
-    assessment_id = Column(
-        String,
-        ForeignKey("risk_assessments.assessment_id"),
-        primary_key=True,
-    )
-    status = Column(String, nullable=False)
-    model_name = Column(String, nullable=False)
-    training_data = Column(String, nullable=False)
-    affects_final_score = Column(Boolean, nullable=False, default=False)
-    message = Column(Text, nullable=False)
-    probability = Column(Float, nullable=True)
-    threshold = Column(Float, nullable=True)
-    prediction = Column(String, nullable=True)
-    feature_assumptions = Column(JSON, nullable=False, default=list)
-    calculated_at = Column(String, nullable=False)
-
-
 class RiskAssessmentResolution(Base):
     __tablename__ = "risk_assessment_resolutions"
 
@@ -161,18 +141,6 @@ class PaymentEvent(Base):
     status = Column(String, nullable=False)
     simulated = Column(Boolean, nullable=False, default=True)
     verified_at = Column(String, nullable=True)
-
-
-class SimulatedPaymentCallback(Base):
-    __tablename__ = "simulated_payment_callbacks"
-
-    callback_id = Column(String, primary_key=True)
-    session_id = Column(String, ForeignKey("merchant_sessions.session_id"), nullable=False)
-    amount = Column(Float, nullable=False)
-    status = Column(String, nullable=False)
-    reference = Column(String, nullable=True)
-    simulated = Column(Boolean, nullable=False, default=True)
-    received_at = Column(String, nullable=False)
 
 
 class Grievance(Base):

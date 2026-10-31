@@ -56,7 +56,7 @@ def report_intelligence(
     confidence: float,
     note: Optional[str] = None,
 ) -> FraudIntelligence:
-    ind_id = f"IND_{uuid.uuid4().hex[:12].upper()}"
+    ind_id = f"IND_{uuid.uuid4().hex[:3].upper()}"
     now = datetime.now(timezone.utc).isoformat()
     ind = FraudIntelligence(
         indicator_id=ind_id,

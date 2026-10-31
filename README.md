@@ -7,7 +7,7 @@ PayShield is a local prototype for heuristic risk assessment of transaction reco
 - **Frontend:** React 18, Vite, Tailwind CSS, and Recharts in `upi-fraud-shield/`.
 - **Backend:** FastAPI and SQLAlchemy in `backend/`.
 - **Storage:** SQLite at `backend/payshield.db` when the backend is started from `backend/`.
-- **Data:** UI MOCK fixtures and `backend/app/data/seed.json` are synthetic. A local SQLite database can also contain user-submitted prototype records, so live API responses use `LOCAL PROTOTYPE RECORDS (MAY INCLUDE SYNTHETIC SEED DATA)` rather than assuming every row is synthetic. Starting with no database creates an empty database; no seed data is loaded automatically.
+- **Data:** The checked-in/current database and UI mock fixtures contain synthetic data. Backend responses identify this as `DEMO / SYNTHETIC DATA`. Starting with no database creates an empty database; no seed data is loaded automatically.
 - **Demo mode:** The frontend's explicit MOCK mode uses static/in-memory demo fixtures, clearly labeled as demo. LIVE mode calls FastAPI and does not fall back to those fixtures on errors.
 
 ## Screens

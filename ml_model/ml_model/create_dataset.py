@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pandas as pd
 import numpy as np
 
@@ -46,9 +44,7 @@ df = pd.DataFrame({
     "is_fraud": is_fraud
 })
 
-dataset_path = Path(__file__).resolve().parent / "dataset" / "transactions.csv"
-dataset_path.parent.mkdir(parents=True, exist_ok=True)
-df.to_csv(dataset_path, index=False)
+df.to_csv("dataset/transactions.csv", index=False)
 
 print("Dataset generated successfully!")
 print("\nFirst 5 rows:")

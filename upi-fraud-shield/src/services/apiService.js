@@ -34,13 +34,8 @@ export const apiService = {
         sender_upi: formData.senderUpi,
         receiver_upi: formData.receiverUpi,
         amount: parseFloat(formData.amount),
-        transaction_time: formData.transactionTime
-          ? new Date(formData.transactionTime).toISOString()
-          : new Date().toISOString(),
-        transaction_type: formData.transactionType,
-        message_text: formData.messageText || null,
-        url: formData.url || null,
-        unsolicited: Boolean(formData.unsolicited)
+        transaction_time: formData.transactionTime || new Date().toISOString(),
+        transaction_type: formData.transactionType
       });
       return { source: "LIVE_API", data: response.data || response };
     }
@@ -182,29 +177,5 @@ export const apiService = {
   async scanUrl(url, mode = getStoredApiMode()) {
     requireLiveMode(mode);
     return { source: "LIVE_API", data: await apiClient.post(ENDPOINTS.URL_SCAN, { url }) };
-  },
-
-  async createMerchantSession(payload, mode = getStoredApiMode()) {
-    requireLiveMode(mode);
-    return {
-      source: "LIVE_API",
-      data: await apiClient.post(ENDPOINTS.MERCHANT_SESSIONS, payload)
-    };
-  },
-
-  async simulatePaymentCallback(sessionId, payload, mode = getStoredApiMode()) {
-    requireLiveMode(mode);
-    return {
-      source: "LIVE_API",
-      data: await apiClient.post(ENDPOINTS.SIMULATE_PAYMENT_CALLBACK(sessionId), payload)
-    };
-  },
-
-  async getMerchantLedger(sessionId, mode = getStoredApiMode()) {
-    requireLiveMode(mode);
-    return {
-      source: "LIVE_API",
-      data: await apiClient.get(ENDPOINTS.MERCHANT_LEDGER(sessionId))
-    };
   }
 };

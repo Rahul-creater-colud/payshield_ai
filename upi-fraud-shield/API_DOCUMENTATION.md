@@ -25,7 +25,7 @@ Returns local backend/database status, the rule-based detection engine, an expli
 
 The response contains metrics and chart series calculated from stored transaction and assessment records. `totalTransactions`, `safeTransactions`, `suspiciousTransactions`, `stopReviewRecommendations`, and `assessedTransactions` describe PayShield records/decisions. `blockedTransactions` counts only verified non-simulated provider events. `totalFraudPreventedAmount` is `null` because the prototype has no verified events to support that claim. Empty sets return zero counts and empty/zero-valued series.
 
-Responses include `data_label: "LOCAL PROTOTYPE RECORDS (MAY INCLUDE SYNTHETIC SEED DATA)"`, `simulated: true`, `detection_engine: "rule-based heuristics"`, and `payment_provider_integration: false`. This avoids asserting that user-submitted rows have synthetic provenance.
+Responses include `data_label: "DEMO / SYNTHETIC DATA"`, `simulated: true`, `detection_engine: "rule-based heuristics"`, and `payment_provider_integration: false`.
 
 ### Transactions and analysis
 
@@ -46,13 +46,6 @@ Responses include `data_label: "LOCAL PROTOTYPE RECORDS (MAY INCLUDE SYNTHETIC S
 - `GET /api/grievances?limit=100`, `POST /api/grievances`, and `PATCH /api/grievances/{case_id}` manage the local prototype queue. This is not an official bank grievance channel.
 - `GET /api/risk/assessments?limit=100` supplies stored assessment references to the grievance form.
 - `POST /api/urls/scan` applies static URL heuristics and stored indicator lookups. It does not open or fetch the submitted URL; a SAFE result is not a guarantee.
-- `POST /api/merchant/sessions` creates a persistent local expected-amount ledger session.
-- `POST /api/merchant/sessions/{session_id}/callbacks/simulate` records a clearly simulated callback.
-- `GET /api/merchant/sessions/{session_id}/ledger` compares stored callback and expected amounts. A match is simulated only and is not confirmation from a payment provider.
-
-### Optional explanations
-
-When Gemini credentials are configured, only the risk score, category, transaction type, and sanitized rule codes are sent to Gemini. Transaction identifiers, amounts, free-text context, URLs, PINs, and OTPs are not included. If Gemini is not configured or fails, the response identifies the local deterministic heuristic fallback.
 
 ### Unavailable integrations
 

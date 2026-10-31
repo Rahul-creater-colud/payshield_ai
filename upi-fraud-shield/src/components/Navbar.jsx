@@ -72,7 +72,7 @@ export const Navbar = ({ onToggleSidebar }) => {
               const connected = await checkConnectivity();
               toast[connected ? "success" : "warning"](
                 connected
-                  ? "Local FastAPI service is reachable. Records may include synthetic seeds; no payment-provider data is connected."
+                  ? "Local FastAPI service is reachable. Stored data is synthetic."
                   : "The backend is unavailable. Live API data cannot be loaded.",
                 connected ? "Local service connected" : "Backend disconnected"
               );
@@ -85,7 +85,7 @@ export const Navbar = ({ onToggleSidebar }) => {
             <RefreshCw className={`h-4 w-4 ${isCheckingBackend ? "animate-spin" : ""}`} />
           </button>
           <span className="hidden rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[9px] font-bold tracking-wide text-amber-800 lg:inline-flex">
-            {mode === "MOCK" ? "DEMO DATA" : "LOCAL PROTOTYPE DATA"}
+            DEMO / SYNTHETIC DATA
           </span>
           <button
             type="button"

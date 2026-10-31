@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.schemas import LOCAL_DATA_LABEL
 from app.services.ml_model_service import ml_model_service
 
 router = APIRouter()
@@ -31,7 +30,7 @@ def _health_check(db: Session) -> dict:
         "ml_model": ml_model_service.status(),
         "payment_provider_integration": False,
         "simulated": True,
-        "data_label": LOCAL_DATA_LABEL,
+        "data_label": "DEMO / SYNTHETIC DATA",
         "time": datetime.now(timezone.utc).isoformat(),
     }
 

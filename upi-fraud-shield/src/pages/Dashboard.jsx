@@ -81,12 +81,15 @@ export const Dashboard = () => {
       }
       const requiredCounts = [
         "totalTransactions",
+        "assessedTransactions",
         "safeTransactions",
         "suspiciousTransactions",
         "blockedTransactions",
         "stopReviewRecommendations"
       ];
-      if (requiredCounts.some((key) => !Number.isInteger(analyticsData.metrics[key]))) {
+      if (requiredCounts.some((key) =>
+        !Number.isInteger(analyticsData.metrics[key]) || analyticsData.metrics[key] < 0
+      )) {
         throw new Error("The backend returned invalid dashboard statistics.");
       }
       setMetrics(analyticsData.metrics);
@@ -95,7 +98,11 @@ export const Dashboard = () => {
       setRiskDist(analyticsData.riskDistribution);
 
       const transactions = transactionData;
-      setRecentTransactions(transactions.slice(0, 6));
+      setRecentTransactions(
+        transactions
+          .filter((transaction) => transaction.riskScore !== null && transaction.riskScore !== undefined)
+          .slice(0, 6)
+      );
       setLastUpdated(analyticsData.updated_at);
     } catch (err) {
       setMetrics(null);
@@ -201,9 +208,9 @@ export const Dashboard = () => {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <StatsCard
-          title="Stored Transactions"
-          value={metrics.totalTransactions.toLocaleString("en-IN")}
-          subvalue={`${metrics.assessedTransactions.toLocaleString("en-IN")} assessed by PayShield`}
+          title="Analyzed Transactions"
+          value={metrics.assessedTransactions.toLocaleString("en-IN")}
+          subvalue={`${metrics.totalTransactions.toLocaleString("en-IN")} stored rows, including synthetic source data`}
           icon={Layers}
           variant="default"
         />

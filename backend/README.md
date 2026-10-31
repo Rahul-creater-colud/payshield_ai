@@ -26,14 +26,14 @@ The destructive `POST /api/admin/reset` endpoint is disabled by default. Keep `E
 - `POST /api/v1/fraud/analyze` assesses and stores a submitted transaction record, returns a separate experimental ML estimate when available, and provides English or Hindi local safety guidance (`language: "en" | "hi"`); it does not initiate a payment.
 - `POST /api/risk/assess` runs the multi-layer heuristic assessment and includes the same supplemental model estimate and language-selectable safety explanation.
 - `GET /api/v1/transactions` and `GET /api/v1/transactions/{id}` return stored records and assessments. Missing records return 404.
-- `GET /api/v1/fraud/analytics` derives counts and charts from stored records. Provider-blocked counts require verified, non-simulated payment events; fraud-prevented amount is `null` until supported by verified records.
+- `GET /api/v1/fraud/analytics` reports stored-row totals separately from assessed transactions. Risk counts, assessment rates, daily activity, and score distributions use persisted assessments only; imported synthetic labels do not count as PayShield decisions. Fraud/safe outcome rates remain `null` because the prototype has no verified outcome labels. Provider-blocked counts require verified, non-simulated payment events; fraud-prevented amount is `null` until supported by verified records.
 - `GET /api/v1/fraud/alerts` derives alerts from stored medium/high assessments. Resolution notes are persisted.
 - `GET /api/v1/collect-requests` reports that no live integration is available; collect actions return 501.
 - `POST /api/v1/fraud/screenshot-ocr` rejects uploaded-image analysis with 501. A fixed sample is available only through an explicitly labeled demo sample key.
 - `POST /api/merchant/sessions`, `GET /api/merchant/transactions/{reference}`, and `POST /api/payments/simulate-callback` implement a persisted, explicitly simulated ledger. The callback validates session, merchant, amount, and duplicate references; its status is not provider confirmation.
 - `POST /api/grievances/{case_id}/appeals` and `GET /api/grievances/{case_id}/appeals` persist/retrieve prototype appeals only after a grievance is resolved or rejected. Grievance status transitions and submissions are recorded as minimal local audit metadata.
 
-Deprecated `/api/v1/demo/...` routes return synthetic examples and identify their data as demo. The frontend LIVE mode does not silently substitute these examples when the backend fails.
+Deprecated `/api/v1/demo/...` routes are aliases over the same persisted records and return no fabricated fallback rows or analytics. The frontend LIVE mode does not silently substitute demo fixtures when the backend fails.
 
 ## Development checks
 
@@ -42,5 +42,20 @@ python -m pytest -q
 ```
 
 The requirements include `httpx` for the optional Gemini client and FastAPI's test client.
+
+## Inspecting the cloned fraud dataset
+
+From the project root, profile CSV datasets discovered under `data/` and regenerate
+the privacy-safe report at `backend/DATASET_ANALYSIS.md`:
+
+```powershell
+python backend\scripts\inspect_fraud_dataset.py
+```
+
+The inspector searches recursively by file contents/headers rather than assuming a
+dataset filename, streams rows, counts exact duplicates using a temporary SQLite
+index, and omits identifier/contact fields from sample output. It does not modify
+the source repository or train/load/replace a model. Use `--data-dir` to inspect
+another relative or absolute dataset folder and `--report` to change the report path.
 
 Swagger: `http://127.0.0.1:8000/docs`; health: `http://127.0.0.1:8000/health`.

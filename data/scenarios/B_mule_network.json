@@ -1,0 +1,24 @@
+{
+  "scenario_id": "B",
+  "title": "Mule Network: Fan-in and Four-Hop Chain",
+  "data_label": "DEMO DATA",
+  "hub_id": "DEMO_MULE_HUB",
+  "feeder_count": 12,
+  "feeder_transaction_prefix": "DEMO_SCENARIO_B_FEED_",
+  "onward_transaction_prefix": "DEMO_SCENARIO_B_HOP_",
+  "hop_chain": [
+    "DEMO_MULE_HUB",
+    "DEMO_MULE_HOP_1",
+    "DEMO_MULE_HOP_2",
+    "DEMO_MULE_HOP_3"
+  ],
+  "request_type": "PAY",
+  "fraud_flag": true,
+  "fraud_pattern_fan_in": "MULE_NETWORK_FAN_IN",
+  "fraud_pattern_onward_prefix": "MULE_NETWORK_ONWARD_HOP_",
+  "risk_score": 88,
+  "risk_category": "HIGH",
+  "recommended_action": "STOP_AND_REVIEW",
+  "simulated": true,
+  "description": "Twelve distinct synthetic senders fund one hub, which forwards funds through three rapid onward hops."
+}

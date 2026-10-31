@@ -50,15 +50,13 @@ def get_analytics(db: Session, date_range: str = "7D", txn_type: str = "ALL") ->
 
     def category_for(tx: Transaction) -> str | None:
         assessment = classified.get(tx.transaction_id)
-        if assessment:
-            return assessment.category
-        return "LOW" if tx.status == "SAFE" else None
+        return assessment.category if assessment else None
 
     def is_suspicious(tx: Transaction) -> bool:
         assessment = classified.get(tx.transaction_id)
         if assessment:
             return assessment.category in {"MEDIUM", "HIGH"}
-        return tx.status in {"FLAGGED", "SUSPICIOUS"}
+        return False
 
     def is_stop_recommended(tx: Transaction) -> bool:
         assessment = classified.get(tx.transaction_id)
@@ -78,16 +76,14 @@ def get_analytics(db: Session, date_range: str = "7D", txn_type: str = "ALL") ->
         and (timestamp := _parse_timestamp(tx.timestamp)) is not None
         and timestamp >= range_start
     ]
+    filtered_assessed_transactions = [
+        tx for tx in filtered_transactions if tx.transaction_id in classified
+    ]
     filtered_assessments = [
-        classified[tx.transaction_id]
-        for tx in filtered_transactions
-        if tx.transaction_id in classified
+        classified[tx.transaction_id] for tx in filtered_assessed_transactions
     ]
 
-    assessed_count = sum(
-        tx.transaction_id in classified or tx.status in {"SAFE", "FLAGGED", "SUSPICIOUS"}
-        for tx in transactions
-    )
+    assessed_count = len(classified)
     safe_count = sum(category_for(tx) == "LOW" for tx in transactions)
     suspicious_count = sum(is_suspicious(tx) for tx in transactions)
     stop_recommendations = sum(is_stop_recommended(tx) for tx in transactions)
@@ -103,10 +99,6 @@ def get_analytics(db: Session, date_range: str = "7D", txn_type: str = "ALL") ->
         or 0
     )
 
-    category_counts = {
-        category: sum(category_for(tx) == category for tx in transactions)
-        for category in ("LOW", "MEDIUM", "HIGH")
-    }
     daily = defaultdict(lambda: {
         "totalVolume": 0,
         "safeVolume": 0,
@@ -114,7 +106,7 @@ def get_analytics(db: Session, date_range: str = "7D", txn_type: str = "ALL") ->
         "stopReviewVolume": 0,
     })
     hourly = defaultdict(int)
-    for tx in filtered_transactions:
+    for tx in filtered_assessed_transactions:
         timestamp = _parse_timestamp(tx.timestamp)
         if timestamp is None:
             continue
@@ -159,11 +151,11 @@ def get_analytics(db: Session, date_range: str = "7D", txn_type: str = "ALL") ->
         assessed_items = [tx for tx in items if tx.transaction_id in classified]
         transaction_types.append({
             "type": payment_type,
-            "safe": sum(category_for(tx) == "LOW" for tx in items),
-            "suspicious": sum(is_suspicious(tx) for tx in items),
-            "stopReview": sum(is_stop_recommended(tx) for tx in items),
+            "safe": sum(category_for(tx) == "LOW" for tx in assessed_items),
+            "suspicious": sum(is_suspicious(tx) for tx in assessed_items),
+            "stopReview": sum(is_stop_recommended(tx) for tx in assessed_items),
             "assessed": len(assessed_items),
-            "total": len(items),
+            "total": len(assessed_items),
         })
 
     return {
@@ -176,9 +168,11 @@ def get_analytics(db: Session, date_range: str = "7D", txn_type: str = "ALL") ->
             "stopReviewRecommendations": stop_recommendations,
             "assessedTransactions": assessed_count,
             "totalFraudPreventedAmount": None,
-            "fraudRatePercent": round(suspicious_count * 100 / assessed_count, 1)
+            "fraudRatePercent": None,
+            "safeRatePercent": None,
+            "suspiciousAssessmentRatePercent": round(suspicious_count * 100 / assessed_count, 1)
             if assessed_count else None,
-            "safeRatePercent": round(safe_count * 100 / assessed_count, 1)
+            "lowRiskAssessmentRatePercent": round(safe_count * 100 / assessed_count, 1)
             if assessed_count else None,
         },
         "dailyActivity": daily_activity,

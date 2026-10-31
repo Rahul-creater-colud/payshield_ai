@@ -1,0 +1,12 @@
+{
+  "scenario_id": "C",
+  "title": "Fake Screenshot: Pending Merchant Session",
+  "data_label": "DEMO DATA",
+  "session_id": "DEMO_SESSION_SCENARIO_C_PENDING",
+  "merchant_id": "DEMO_MERCHANT_C",
+  "expected_amount": 1850.0,
+  "status": "PENDING",
+  "simulated": true,
+  "matching_payment_event": false,
+  "description": "A synthetic receipt screenshot is not supported by a matching merchant-ledger payment event."
+}

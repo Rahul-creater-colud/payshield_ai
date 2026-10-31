@@ -1,0 +1,20 @@
+{
+  "scenario_id": "A",
+  "title": "Fake Collect Request",
+  "data_label": "DEMO DATA",
+  "transaction_id": "DEMO_SCENARIO_A_FAKE_COLLECT",
+  "sender_id": "U001",
+  "receiver_id": "DEMO_SCENARIO_A_RECEIVER",
+  "receiver_vpa": "refund.support.demo@ybl",
+  "transaction_type": "P2P",
+  "request_type": "COLLECT",
+  "amount": 4999.0,
+  "timestamp": "2026-10-31T04:00:00+00:00",
+  "fraud_flag": true,
+  "fraud_pattern": "FAKE_COLLECT_REQUEST",
+  "risk_score": 82,
+  "risk_category": "HIGH",
+  "recommended_action": "STOP_AND_REVIEW",
+  "simulated": true,
+  "description": "A synthetic unsolicited collect request using a refund-themed demo VPA."
+}

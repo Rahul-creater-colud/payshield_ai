@@ -48,12 +48,25 @@ The script compares balanced Logistic Regression and Random Forest pipelines, us
 
 Do not run `python -m app.db.reset` against a database you want to preserve: it drops and recreates the SQLite data using synthetic seed records. For an empty-database test, use an isolated test database or back up the existing database first.
 
+## Synthetic demo-data enrichment and seed
+
+The root-level enrichment scripts keep the source ML CSV unchanged and write a separate `DEMO DATA` CSV to `ml_model/ml_model/data/enriched_indian_upi_fraud_data.csv`. The deterministic enrichment normalizes coordinates to Indian cities, emits unique 10-digit phone values labeled `SYNTHETIC`, converts `TransactionFrequency` into integer `txn_per_day`, and rebalances the combined dataset and scenarios to a configurable fraud rate (2.5% by default). It also includes explicit labels for fake collect requests, mule-network transfers, night-risk patterns, and genuine new-recipient false positives. CSV scenarios use `COLLECT`; when seeded, that maps to the backend's existing canonical `COLLECT_REQUEST` enum without changing its schema.
+
+Run from the project root to add or update the reserved synthetic records in the configured local database (`DB_URL`, defaulting to `backend/payshield.db`):
+
+```powershell
+python scripts\enrich_and_seed.py
+python scripts\verify_seed.py
+```
+
+The seed is idempotent and does not change the database schema. `--reset` deletes only the seeder's reserved `CSV_`/`DEMO_` records before rebuilding them; it does not reset unrelated application data. Use `--fraud-rate 0.02` to choose another supported target rate, or `--database-url "sqlite:///C:/path/to/test.db"` to seed an isolated database. Four scenario definitions live in `data/scenarios/`: fake COLLECT, mule network, unmatched fake screenshot (PENDING), and a genuine new-recipient MEDIUM alert with a grievance. Merchant payment events are simulated only; these fixtures do not represent live UPI or bank integrations.
+
 ## Live-mode endpoints
 
 The dashboard uses:
 
 - `GET /api/v1/health` — local backend/database status, heuristic engine, synthetic-data labeling, and experimental-model availability.
-- `GET /api/v1/fraud/analytics` — counts and charts calculated from persisted transaction, assessment, and verified payment-event records.
+- `GET /api/v1/fraud/analytics` — stored-row totals are separate from assessed counts. Risk counts, assessment rates, daily activity, and score distributions use persisted assessments only; imported synthetic labels are not treated as PayShield decisions. Fraud/safe outcome rates remain unavailable (`null`) because no verified outcome labels exist. Verified provider-block events are counted separately.
 - `GET /api/v1/transactions` and `GET /api/v1/transactions/{id}` — persisted records and latest risk decisions.
 - `GET /api/v1/fraud/alerts` — alerts derived from stored medium/high assessments.
 - `GET /api/catalog` — synthetic local account references used by Merchant Verification; this does not verify merchants externally.
@@ -67,7 +80,7 @@ The dashboard uses:
 - `GET /api/merchant/transactions/{reference}` — retrieves the locally stored demo transaction by reference.
 - `POST /api/payments/simulate-callback` — records an explicitly simulated callback after validating session, merchant, amount, and duplicate references; this is not provider confirmation and does not count as a real payment event.
 
-Analysis uses `POST /api/v1/fraud/analyze`; it records an internal risk assessment and returns a supplemental experimental ML estimate when the local artifacts and dependencies are available. That estimate does not affect the heuristic score, and the endpoint does not execute or block a payment. Gemini explanations are optional; when configured, only the score, category, transaction type, and sanitized trigger codes are sent—never transaction identifiers, amounts, free text, URLs, PINs, or OTPs. A deterministic local explanation is used when Gemini is not configured or available. Collect-request control is unavailable without an authorized provider integration. Uploaded-image OCR is unavailable; only explicitly labeled synthetic sample responses exist. Fraud-prevented monetary value is not available because no verified prevention events support that metric. Deprecated `/api/v1/demo/...` endpoints and frontend MOCK fixtures are synthetic demo surfaces, not live data.
+Analysis uses `POST /api/v1/fraud/analyze`; it records an internal risk assessment and returns a supplemental experimental ML estimate when the local artifacts and dependencies are available. That estimate does not affect the heuristic score, and the endpoint does not execute or block a payment. Gemini explanations are optional; when configured, only the score, category, transaction type, and sanitized trigger codes are sent—never transaction identifiers, amounts, free text, URLs, PINs, or OTPs. Deterministic local guidance clearly identifies when Gemini is not configured or inference fails. Collect-request control is unavailable without an authorized provider integration. Uploaded-image OCR is unavailable; only explicitly labeled synthetic sample responses exist. Fraud-prevented monetary value is not available because no verified prevention events support that metric. Deprecated `/api/v1/demo/...` routes now alias persisted records and do not fabricate fallback transactions or analytics; frontend MOCK fixtures remain explicitly labeled synthetic demo data.
 
 ## Validation
 

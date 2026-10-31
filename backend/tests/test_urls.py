@@ -38,6 +38,31 @@ def test_url_scan_gpay_refund_lookalike(client):
     assert r.json()["verdict"] in ("SUSPICIOUS", "MALICIOUS")
 
 
+def test_paypal_lookalike_host_is_not_safe(client):
+    response = client.post(
+        "/api/urls/scan",
+        json={"url": "https://login-paypal.com.evil.example/secure"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["verdict"] == "SUSPICIOUS"
+    assert body["risk_score"] > 0
+    assert any(item["code"] == "LOOKALIKE_DOMAIN" for item in body["indicators"])
+
+
+def test_official_paypal_subdomain_is_not_flagged_as_lookalike(client):
+    response = client.post(
+        "/api/urls/scan",
+        json={"url": "https://secure.paypal.com/account"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["verdict"] == "SAFE"
+    assert not any(item["code"] == "LOOKALIKE_DOMAIN" for item in body["indicators"])
+
+
 def test_https_does_not_give_safe(client):
     """HTTPS alone on a suspicious domain must NOT yield SAFE."""
     r = client.post("/api/urls/scan", json={"url": "https://paytm-secure.xyz/login"})

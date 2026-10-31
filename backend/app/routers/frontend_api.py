@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, Query, File, UploadFile, Form
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
@@ -282,6 +283,12 @@ def api_v1_health(db: Session = Depends(get_db)):
 def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db)):
     """Assess and store a submitted record; no payment is executed or blocked."""
     txn_id = req.transaction_id or f"UPI/{datetime.now(timezone.utc).year}/{uuid.uuid4().hex[:9]}"
+    if db.get(models.Transaction, txn_id) is not None:
+        raise AppError(
+            ErrorCode.CONFLICT,
+            f"Transaction ID '{txn_id}' is already recorded.",
+            status_code=409,
+        )
     ts_str = req.transaction_time or datetime.now(timezone.utc).isoformat()
 
     try:
@@ -343,7 +350,7 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
     intel_hit = (
         db.query(models.FraudIntelligence)
         .filter(
-            models.FraudIntelligence.indicator_value.ilike(f"%{receiver_upi_clean}%"),
+            func.lower(func.trim(models.FraudIntelligence.indicator_value)) == receiver_upi_clean,
             models.FraudIntelligence.review_status != "RETRACTED",
         )
         .first()
@@ -371,8 +378,9 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
         score = 45
         reasons.append("High transaction value above baseline standard deviation")
     if not reasons:
-        reasons.append("Frequent contact with verified transaction history")
-        reasons.append("Amount within normal standard deviation for sender")
+        reasons.append(
+            "No configured risk heuristic matched; recipient trust and device signals are unavailable."
+        )
         score = min(score, 18)
 
     # Categorise
@@ -403,12 +411,12 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
 
     # Specific indicators
     indicators = {
-        "newDevice": is_night or score >= 70,
+        "newDevice": None,
         "unusualTime": is_night,
-        "velocityAlert": is_mule_vpa or (req.amount > 30000),
-        "blacklistedReceiver": bool(intel_hit or is_phish_vpa),
-        "mismatchedVPA": is_brand_spoof or is_phish_vpa,
-        "collectRequestAnomaly": is_collect,
+        "velocityAlert": model_features["transaction_count_24h"] >= 3,
+        "blacklistedReceiver": bool(intel_hit),
+        "mismatchedVPA": None,
+        "collectRequestAnomaly": bool(is_collect and (is_phish_vpa or intel_hit)),
     }
 
     # Persist record into transactions & risk_assessments for audit trail
@@ -422,7 +430,7 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
             status=status,
             request_type=req.transaction_type,
         )
-        db.merge(db_txn)
+        db.add(db_txn)
 
         asm_id = f"ASM_{uuid.uuid4().hex[:8].upper()}"
         db_asm = models.RiskAssessment(
@@ -438,6 +446,13 @@ def api_v1_analyze_transaction(req: AnalyzeRequest, db: Session = Depends(get_db
         )
         db.merge(db_asm)
         db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise AppError(
+            ErrorCode.CONFLICT,
+            f"Transaction ID '{txn_id}' is already recorded.",
+            status_code=409,
+        ) from exc
     except Exception as exc:
         db.rollback()
         raise AppError(
@@ -484,114 +499,45 @@ def api_v1_get_transactions(
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    """Retrieve logged transactions with risk assessment details."""
-    query = db.query(models.Transaction).order_by(desc(models.Transaction.timestamp))
-    if status and status != "ALL":
-        query = query.filter(models.Transaction.status == status)
+    """Retrieve persisted transactions and their actual risk assessments."""
+    db_txns = (
+        db.query(models.Transaction)
+        .order_by(desc(models.Transaction.timestamp))
+        .all()
+    )
+    assessments = (
+        db.query(models.RiskAssessment)
+        .order_by(desc(models.RiskAssessment.created_at), desc(models.RiskAssessment.assessment_id))
+        .all()
+    )
+    latest = {}
+    for assessment in assessments:
+        latest.setdefault(assessment.transaction_id, assessment)
 
-    db_txns = query.limit(limit).all()
+    requested_status = (status or "ALL").upper()
+    if requested_status == "SUSPICIOUS":
+        requested_status = "FLAGGED"
     results = []
 
     for tx in db_txns:
+        item = _transaction_response(tx, latest.get(tx.transaction_id))
+        if requested_status != "ALL" and item["status"] != requested_status:
+            continue
         if search:
             s = search.lower()
             if (
-                s not in tx.transaction_id.lower()
-                and s not in tx.sender_id.lower()
-                and s not in tx.receiver_id.lower()
+                s not in item["transactionId"].lower()
+                and s not in item["senderUpi"].lower()
+                and s not in item["receiverUpi"].lower()
             ):
                 continue
-
-        # Look up assessment
-        asm = db.query(models.RiskAssessment).filter_by(transaction_id=tx.transaction_id).first()
-        score = asm.score if asm else (90 if tx.status == "BLOCKED" else (50 if tx.status == "FLAGGED" else 15))
-        category = asm.category if asm else ("HIGH" if score >= 70 else ("MEDIUM" if score >= 40 else "LOW"))
-        reasons_raw = [r["text"] for r in (asm.reasons or []) if isinstance(r, dict) and "text" in r] if asm else [
-            "Transaction assessed by rules engine."
-        ]
-
-        def _name(val: str) -> str:
-            return val.split("@")[0].replace(".", " ").replace("-", " ").title()
-
-        results.append({
-            "id": f"tx-{tx.transaction_id}",
-            "transactionId": tx.transaction_id,
-            "senderName": _name(tx.sender_id),
-            "senderUpi": tx.sender_id,
-            "receiverName": _name(tx.receiver_id),
-            "receiverUpi": tx.receiver_id,
-            "amount": tx.amount,
-            "timestamp": tx.timestamp,
-            "type": tx.request_type,
-            "status": (
-                "STOP_RECOMMENDED" if tx.status == "BLOCKED" or category == "HIGH"
-                else "FLAGGED" if tx.status in {"FLAGGED", "SUSPICIOUS"}
-                else "SAFE" if tx.status == "SAFE"
-                else "UNASSESSED"
-            ),
-            "riskScore": score,
-            "riskCategory": category,
-            "reasons": reasons_raw or ["Automated behavioral check"],
-        })
-
-    # If DB has very few transactions, append sample entries to keep frontend view rich
-    if len(results) < 5:
-        from app.routers import catalog
-        # Supplement with standard demo records
-        seed_samples = [
-            {
-                "id": "tx-101",
-                "transactionId": "UPI/2026/894729104",
-                "senderName": "Aarav Sharma",
-                "senderUpi": "aarav.sharma@okaxis",
-                "receiverName": "Kavita Verma",
-                "receiverUpi": "kavita.v@okhdfcbank",
-                "amount": 1450.00,
-                "timestamp": "2026-10-30T17:42:15+05:30",
-                "type": "P2P",
-                "status": "SAFE",
-                "riskScore": 12,
-                "riskCategory": "LOW",
-                "reasons": ["Frequent contact with verified transaction history"],
-            },
-            {
-                "id": "tx-102",
-                "transactionId": "UPI/2026/993821034",
-                "senderName": "Pooja Patel",
-                "senderUpi": "pooja.patel@icici",
-                "receiverName": "KYC Verification Support",
-                "receiverUpi": "sbi-kyc-update-desk@ybl",
-                "amount": 24999.00,
-                "timestamp": "2026-10-30T16:15:30+05:30",
-                "type": "COLLECT_REQUEST",
-                "status": "STOP_RECOMMENDED",
-                "riskScore": 94,
-                "riskCategory": "HIGH",
-                "reasons": ["Impersonation tactic: UPI handle mimics official bank KYC department"],
-            },
-            {
-                "id": "tx-103",
-                "transactionId": "UPI/2026/772819022",
-                "senderName": "Ananya Sen",
-                "senderUpi": "ananya.sen@ybl",
-                "receiverName": "Fastpay Crypto Services",
-                "receiverUpi": "fastpay.crypto99@airtel",
-                "amount": 45000.00,
-                "timestamp": "2026-10-30T02:35:10+05:30",
-                "type": "P2P",
-                "status": "STOP_RECOMMENDED",
-                "riskScore": 98,
-                "riskCategory": "HIGH",
-                "reasons": ["Nocturnal Unusual Spike + Money Mule Pattern"],
-            },
-        ]
-        results.extend(seed_samples)
+        results.append(item)
 
     return {
         "success": True,
         "total": len(results),
-        "data": results,
-        "data_label": "DEMO DATA — legacy sample route",
+        "data": results[:limit],
+        "data_label": "DEMO / SYNTHETIC DATA",
         "simulated": True,
     }
 
@@ -599,57 +545,23 @@ def api_v1_get_transactions(
 @router.get("/demo/transactions/{txn_id}", deprecated=True)
 def api_v1_get_transaction_detail(txn_id: str, db: Session = Depends(get_db)):
     """Retrieve single transaction detail."""
-    clean_id = txn_id.replace("tx-", "")
+    clean_id = txn_id.removeprefix("tx-")
     tx = db.query(models.Transaction).filter_by(transaction_id=clean_id).first()
     if not tx:
-        # Fallback sample
-        return {
-            "success": True,
-            "data_label": "DEMO DATA — legacy sample route",
-            "simulated": True,
-            "data": {
-                "id": txn_id,
-                "transactionId": clean_id,
-                "senderName": "Aarav Sharma",
-                "senderUpi": "aarav.sharma@okaxis",
-                "receiverName": "Kavita Verma",
-                "receiverUpi": "kavita.v@okhdfcbank",
-                "amount": 1450.00,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "type": "P2P",
-                "status": "SAFE",
-                "riskScore": 12,
-                "riskCategory": "LOW",
-                "reasons": ["Frequent contact with verified transaction history"],
-                "indicators": {"newDevice": False, "unusualTime": False, "velocityAlert": False},
-            },
-        }
+        raise AppError(ErrorCode.NOT_FOUND, "Stored transaction not found", status_code=404)
 
-    asm = db.query(models.RiskAssessment).filter_by(transaction_id=tx.transaction_id).first()
-    score = asm.score if asm else 20
-    category = asm.category if asm else "LOW"
-    reasons = [r["text"] for r in (asm.reasons or []) if isinstance(r, dict)] if asm else []
+    asm = (
+        db.query(models.RiskAssessment)
+        .filter_by(transaction_id=tx.transaction_id)
+        .order_by(desc(models.RiskAssessment.created_at), desc(models.RiskAssessment.assessment_id))
+        .first()
+    )
 
     return {
         "success": True,
-        "data_label": "DEMO DATA — legacy sample route",
+        "data_label": "DEMO / SYNTHETIC DATA",
         "simulated": True,
-        "data": {
-            "id": f"tx-{tx.transaction_id}",
-            "transactionId": tx.transaction_id,
-            "senderName": tx.sender_id.split("@")[0].title(),
-            "senderUpi": tx.sender_id,
-            "receiverName": tx.receiver_id.split("@")[0].title(),
-            "receiverUpi": tx.receiver_id,
-            "amount": tx.amount,
-            "timestamp": tx.timestamp,
-            "type": tx.request_type,
-            "status": "STOP_RECOMMENDED" if tx.status == "BLOCKED" else tx.status,
-            "riskScore": score,
-            "riskCategory": category,
-            "reasons": reasons,
-            "indicators": {"newDevice": False, "unusualTime": False, "velocityAlert": False},
-        },
+        "data": _transaction_response(tx, asm),
     }
 
 
@@ -664,8 +576,6 @@ def _transaction_response(tx: models.Transaction, assessment: Optional[models.Ri
         status = "FLAGGED"
     elif category == "LOW":
         status = "SAFE"
-    elif tx.status in {"SAFE", "FLAGGED", "SUSPICIOUS"}:
-        status = "FLAGGED" if tx.status == "SUSPICIOUS" else tx.status
     else:
         status = "UNASSESSED"
 
@@ -795,65 +705,8 @@ def api_v1_get_fraud_analytics(
     txnType: Optional[str] = Query("ALL"),
     db: Session = Depends(get_db),
 ):
-    """Return deprecated synthetic analytics for explicit demo use only."""
-    total_txns = db.query(models.Transaction).count()
-    total_assessments = db.query(models.RiskAssessment).count()
-
-    return {
-        "success": True,
-        "data_label": "DEMO DATA — legacy static analytics, not live records",
-        "simulated": True,
-        "detection_engine": "rule-based heuristics",
-        "payment_provider_integration": False,
-        "metrics": {
-            "totalTransactions": max(148920, total_txns + 148900),
-            "safeTransactions": max(142380, total_txns + 142000),
-            "suspiciousTransactions": 4890 + total_assessments,
-            "blockedTransactions": 0,
-            "stopReviewRecommendations": 1650,
-            "totalFraudPreventedAmount": None,
-            "fraudRatePercent": 1.11,
-            "safeRatePercent": 95.61,
-        },
-        "dailyActivity": [
-            {"day": "Mon", "date": "2026-10-24", "totalVolume": 18400, "safeVolume": 17620, "suspiciousVolume": 560, "stopReviewVolume": 220},
-            {"day": "Tue", "date": "2026-10-25", "totalVolume": 21200, "safeVolume": 20280, "suspiciousVolume": 690, "stopReviewVolume": 230},
-            {"day": "Wed", "date": "2026-10-26", "totalVolume": 19800, "safeVolume": 18940, "suspiciousVolume": 610, "stopReviewVolume": 250},
-            {"day": "Thu", "date": "2026-10-27", "totalVolume": 23400, "safeVolume": 22350, "suspiciousVolume": 790, "stopReviewVolume": 260},
-            {"day": "Fri", "date": "2026-10-28", "totalVolume": 24900, "safeVolume": 23780, "suspiciousVolume": 820, "stopReviewVolume": 300},
-            {"day": "Sat", "date": "2026-10-29", "totalVolume": 28500, "safeVolume": 27150, "suspiciousVolume": 980, "stopReviewVolume": 370},
-            {"day": "Sun", "date": "2026-10-30", "totalVolume": 22720, "safeVolume": 21760, "suspiciousVolume": 740, "stopReviewVolume": 220},
-        ],
-        "riskDistribution": [
-            {"range": "0 - 20 (Safe)", "count": 128400, "color": "#10b981", "percent": 86.2},
-            {"range": "21 - 40 (Low Risk)", "count": 13980, "color": "#34d399", "percent": 9.4},
-            {"range": "41 - 60 (Medium Risk)", "count": 3250, "color": "#f59e0b", "percent": 2.2},
-            {"range": "61 - 80 (High Suspicion)", "count": 1640, "color": "#fb923c", "percent": 1.1},
-            {"range": "81 - 100 (High Risk)", "count": 1650, "color": "#ef4444", "percent": 1.1},
-        ],
-        "transactionTypes": [
-            {"type": "P2P (Peer to Peer)", "safe": 65400, "suspicious": 1890, "stopReview": 740, "total": 68030},
-            {"type": "P2M (Merchant Pay)", "safe": 52100, "suspicious": 920, "stopReview": 210, "total": 53230},
-            {"type": "Collect Request", "safe": 11400, "suspicious": 1680, "stopReview": 580, "total": 13660},
-            {"type": "QR Scan", "safe": 9800, "suspicious": 320, "stopReview": 90, "total": 10210},
-            {"type": "Bill Payments (BBPS)", "safe": 3680, "suspicious": 80, "stopReview": 30, "total": 3790},
-        ],
-        "transactionTypesVolume": [
-            {"type": "P2P (Peer to Peer)", "safe": 65400, "suspicious": 1890, "stopReview": 740, "total": 68030},
-            {"type": "P2M (Merchant Pay)", "safe": 52100, "suspicious": 920, "stopReview": 210, "total": 53230},
-            {"type": "Collect Request", "safe": 11400, "suspicious": 1680, "stopReview": 580, "total": 13660},
-            {"type": "QR Scan", "safe": 9800, "suspicious": 320, "stopReview": 90, "total": 10210},
-            {"type": "Bill Payments (BBPS)", "safe": 3680, "suspicious": 80, "stopReview": 30, "total": 3790},
-        ],
-        "hourlyTraffic": [
-            {"hour": "00:00", "volume": 1200, "riskAssessments": 45},
-            {"hour": "04:00", "volume": 420, "riskAssessments": 52},
-            {"hour": "08:00", "volume": 4800, "riskAssessments": 32},
-            {"hour": "12:00", "volume": 11400, "riskAssessments": 95},
-            {"hour": "16:00", "volume": 10600, "riskAssessments": 112},
-            {"hour": "20:00", "volume": 14200, "riskAssessments": 124},
-        ],
-    }
+    """Return current stored analytics through the deprecated route alias."""
+    return get_analytics(db, date_range=dateRange or "7D", txn_type=txnType or "ALL")
 
 
 @router.get("/fraud/analytics")

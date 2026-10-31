@@ -28,13 +28,13 @@ SHORTENERS = {
 
 LOOKALIKE_PATTERNS = [
     r"paytm[^.]*\.", r"phonepe[^.]*\.", r"gpay[^.]*\.",
-    r"googlepay[^.]*\.", r"bhim[^.]*\.", r"upi[^.]*\.",
+    r"googlepay[^.]*\.", r"bhim[^.]*\.", r"paypal[^.]*\.", r"upi[^.]*\.",
     r"sbi[^.]*yono", r"icici[^.]*\.", r"hdfc[^.]*\.",
 ]
 
 LEGIT_DOMAINS = {
     "paytm.com", "phonepe.com", "pay.google.com", "google.com",
-    "sbi.co.in", "icicibank.com", "hdfcbank.com",
+    "sbi.co.in", "icicibank.com", "hdfcbank.com", "paypal.com",
 }
 
 SUSPICIOUS_KEYWORDS = [
@@ -138,7 +138,11 @@ def scan_url(url: str, db: Optional[Session] = None) -> dict:
         })
 
     # Lookalike domains
-    if hostname not in LEGIT_DOMAINS:
+    is_official_domain = any(
+        hostname == domain or hostname.endswith(f".{domain}")
+        for domain in LEGIT_DOMAINS
+    )
+    if not is_official_domain:
         for pattern in LOOKALIKE_PATTERNS:
             if re.search(pattern, hostname, re.IGNORECASE):
                 score += 25

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+
 
 def test_api_v1_health(client):
     r = client.get("/api/v1/health")
@@ -58,6 +60,13 @@ def test_api_v1_analyze_safe_p2m(client):
     assert data["status"] == "SAFE"
     assert data["riskCategory"] == "LOW"
     assert data["riskScore"] <= 39
+    assert all(
+        "verified transaction history" not in reason.lower()
+        and "normal standard deviation" not in reason.lower()
+        for reason in data["reasons"]
+    )
+    assert data["indicators"]["newDevice"] is None
+    assert data["indicators"]["mismatchedVPA"] is None
 
 
 def test_api_v1_analyze_returns_hindi_safety_guidance(client):
@@ -138,6 +147,55 @@ def test_api_v1_analyze_rejects_invalid_amounts_and_transaction_types(client):
     )
     assert invalid_language.status_code == 422
     assert invalid_language.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_api_v1_analyze_accepts_billpay_backend_type(client):
+    response = client.post(
+        "/api/v1/fraud/analyze",
+        json={
+            "transaction_id": f"BBPS-TEST-{uuid.uuid4().hex}",
+            "sender_upi": "billpay-sender@upi",
+            "receiver_upi": "electricity-biller@upi",
+            "amount": 850.0,
+            "transaction_type": "BBPS",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["type"] == "BBPS"
+
+
+def test_api_v1_analyze_rejects_duplicate_transaction_id_without_overwrite(client):
+    transaction_id = f"DUPLICATE-TEST-{uuid.uuid4().hex}"
+    first = client.post(
+        "/api/v1/fraud/analyze",
+        json={
+            "transaction_id": transaction_id,
+            "sender_upi": "first-sender@upi",
+            "receiver_upi": "first-recipient@upi",
+            "amount": 700.0,
+            "transaction_type": "P2M",
+        },
+    )
+    assert first.status_code == 200
+
+    duplicate = client.post(
+        "/api/v1/fraud/analyze",
+        json={
+            "transaction_id": transaction_id,
+            "sender_upi": "second-sender@upi",
+            "receiver_upi": "second-recipient@upi",
+            "amount": 999999.0,
+            "transaction_type": "COLLECT_REQUEST",
+        },
+    )
+    assert duplicate.status_code == 409
+    assert duplicate.json()["error"]["code"] == "CONFLICT"
+
+    stored = client.get(f"/api/v1/transactions/{transaction_id}")
+    assert stored.status_code == 200
+    assert stored.json()["data"]["senderUpi"] == "first-sender@upi"
+    assert stored.json()["data"]["amount"] == 700.0
 
 
 def test_api_v1_get_transactions(client):
@@ -247,7 +305,7 @@ def test_legacy_demo_endpoints_are_labeled_and_do_not_claim_blocked_payments(cli
     analytics = client.get("/api/v1/demo/fraud/analytics")
     assert analytics.status_code == 200
     analytics_body = analytics.json()
-    assert analytics_body["data_label"].startswith("DEMO DATA")
+    assert analytics_body["data_label"] == "DEMO / SYNTHETIC DATA"
     assert analytics_body["simulated"] is True
     assert analytics_body["metrics"]["blockedTransactions"] == 0
     assert analytics_body["metrics"]["totalFraudPreventedAmount"] is None
@@ -256,6 +314,6 @@ def test_legacy_demo_endpoints_are_labeled_and_do_not_claim_blocked_payments(cli
     transactions = client.get("/api/v1/demo/transactions")
     assert transactions.status_code == 200
     transaction_body = transactions.json()
-    assert transaction_body["data_label"].startswith("DEMO DATA")
+    assert transaction_body["data_label"] == "DEMO / SYNTHETIC DATA"
     assert transaction_body["simulated"] is True
     assert all(item["status"] != "BLOCKED" for item in transaction_body["data"])

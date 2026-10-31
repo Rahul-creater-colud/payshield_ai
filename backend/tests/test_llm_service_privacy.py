@@ -13,7 +13,11 @@ def test_external_explanation_prompt_excludes_transaction_identifiers_and_values
         prompt_capture["prompt"] = prompt
         return {
             "explanation": "Review the local risk signals.",
-            "safety_recommendations": ["Verify the recipient independently."],
+            "safety_recommendations": [
+                "Verify the recipient independently.",
+                "Do not share your UPI PIN.",
+                "Review the risk signals before proceeding.",
+            ],
             "risk_level_summary": "Review recommended",
         }
 
@@ -49,6 +53,7 @@ def test_external_explanation_prompt_excludes_transaction_identifiers_and_values
 def test_deterministic_hindi_safety_message_does_not_claim_payment_blocked(monkeypatch):
     monkeypatch.setattr(settings, "GEMINI_API_KEY", None)
     monkeypatch.setattr(settings, "LLM_API_KEY", None)
+    monkeypatch.setattr(llm_service.os, "getenv", lambda _: None)
     result = llm_service.generate_explanation(
         transaction_data={
             "receiver_upi": "shop@example",
@@ -63,3 +68,21 @@ def test_deterministic_hindi_safety_message_does_not_claim_payment_blocked(monke
     assert result["safety_recommendations"]
     assert "भुगतान को रोकता नहीं है" in result["explanation"]
     assert "confidence_score" not in result
+    assert result["llm_availability"] == "NOT_CONFIGURED"
+    assert "not configured" in result["llm_message"].lower()
+
+
+def test_failed_external_explanation_reports_deterministic_fallback(monkeypatch):
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", "unit-test-key")
+    monkeypatch.setattr(settings, "LLM_API_KEY", None)
+    monkeypatch.setattr(llm_service.os, "getenv", lambda _: None)
+    monkeypatch.setattr(llm_service, "_call_gemini_api", lambda *args, **kwargs: None)
+
+    result = llm_service.generate_explanation(
+        transaction_data={"transaction_type": "P2P", "amount": 500},
+        risk_assessment={"score": 10, "category": "LOW", "reasons": []},
+    )
+
+    assert result["llm_status"] == "HEURISTIC_FALLBACK"
+    assert result["llm_availability"] == "REQUEST_FAILED"
+    assert "see backend logs" in result["llm_message"]
